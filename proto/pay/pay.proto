@@ -16,9 +16,8 @@ message Order {
     int64 total_amount = 6; // 订单总金额
     string operator_id = 7; // 商户操作员编号
     string terminal_id = 8; // 商户机具终端编号
-    bool stauts = 9;    // 订单状态
-    string created_at = 10;
-    string updated_at = 11;
+    string created_at = 9;
+    string updated_at = 10;
 }
 
 message Request {

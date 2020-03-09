@@ -19,7 +19,7 @@ message Alipay {
     int64 id = 1;
     string app_id = 2;
     string private_key = 3;
-    string alipay_public_key = 4;
+    string ali_pay_public_key = 4;
     string sign_type = 5;
 }
 
@@ -33,7 +33,7 @@ message Wechat {
 }
 
 message Config {
-    string id = 1;    // 商户ID user_idint64 unspsc_id = 11;           // 商品及服务编码
+    string id = 1;    // 商户ID userID;           // 商品及服务编码
     int64 alipay_id = 2;          // 支付宝ID
     int64 wechat_id = 3;          // 微信ID
     bool stauts = 4;        // 状态

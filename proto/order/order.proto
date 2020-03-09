@@ -18,7 +18,7 @@ service Orders {
 
 message Order {
     string id = 1;
-    string store_id = 2;    // 商户门店编号 收款账号ID
+    string store_id = 2;    // 商户门店编号 收款账号ID userID
     string method = 3;    // 付款方式 [支付宝、微信、银联等]
     string auth_code = 4; // 付款码
     string title = 5;   // 订单标题

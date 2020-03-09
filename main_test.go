@@ -19,7 +19,7 @@ func TestConfigGet(t *testing.T) {
 			Alipay: &configPB.Alipay{
 				AppId:           `saasas`,
 				PrivateKey:      `asdfqwwqqw`,
-				AlipayPublicKey: `asasq`,
+				AliPayPublicKey: `asasq`,
 				SignType:        `asasas`,
 			},
 			Wechat: &configPB.Wechat{
@@ -41,7 +41,7 @@ func TestConfigGet(t *testing.T) {
 
 func TestAopF2FAlipay(t *testing.T) {
 	alipay := &service.Alipay{}
-	h := handler.Pay{alipay, nil}
+	h := handler.Pay{nil, nil, alipay, nil}
 	req := &payPB.Request{
 		Order: &payPB.Order{
 			Method:      `alipay`,
@@ -60,7 +60,7 @@ func TestAopF2FAlipay(t *testing.T) {
 
 func TestAopF2FWechat(t *testing.T) {
 	wecaht := &service.Wechat{}
-	h := handler.Pay{nil, wecaht}
+	h := handler.Pay{nil, nil, nil, wecaht}
 	req := &payPB.Request{
 		Order: &payPB.Order{
 			Method:      `wechat`,
