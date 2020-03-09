@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package pay;
+
+service Pays {
+    // AopF2F 商家扫用户付款码
+    rpc AopF2F(Request) returns (Response) {}
+}
+
+message Order {
+    string store_id = 1;    // 商户门店编号 收款账号ID
+    string method = 2;    // 付款方式 [支付宝、微信、银联等]
+    string auth_code = 3; // 付款码
+    string title = 4;   // 订单标题
+    string order_sn = 5; // 订单编号
+    int64 total_amount = 6; // 订单总金额
+    string operator_id = 7; // 商户操作员编号
+    string terminal_id = 8; // 商户机具终端编号
+    bool stauts = 9;    // 订单状态
+    string created_at = 10;
+    string updated_at = 11;
+}
+
+message Request {
+    Order order = 1;                      // 请求支付订单
+}
+
+message Response {
+    bool valid = 1;
+}
