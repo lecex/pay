@@ -27,8 +27,9 @@ func (srv *Pay) UserConfig(userId string) (config *configPB.Config, err error) {
 }
 
 // CreateOrder 创建订单
-func (srv *Pay) CreateOrder(order *pd.Order) (orderId string, err error) {
-	res, err := srv.Order.Create(&orderPB.Order{
+func (srv *Pay) CreateOrder(order *pd.Order) (err error) {
+	_, err = srv.Order.Create(&orderPB.Order{
+		Id:          order.Id,
 		StoreId:     order.StoreId,     // 商户门店编号 收款账号ID userID
 		Method:      order.Method,      // 付款方式 [支付宝、微信、银联等]
 		AuthCode:    order.AuthCode,    // 付款码
@@ -39,7 +40,6 @@ func (srv *Pay) CreateOrder(order *pd.Order) (orderId string, err error) {
 		TerminalId:  order.TerminalId,  // 商户机具终端编号
 		Stauts:      false,             // 订单状态 默认状态未付款
 	})
-	orderId = res.Id
 	return
 }
 
@@ -59,7 +59,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		res.Valid = false
 		return fmt.Errorf("查询配置信息失败:%s", err)
 	}
-	orderId, err := srv.CreateOrder(req.Order) //创建订单返回订单ID
+	err = srv.CreateOrder(req.Order) //创建订单返回订单ID
 	if err != nil {
 		res.Valid = false
 		return fmt.Errorf("创建订单失败:%s", err)
@@ -77,7 +77,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			res.Valid = false
 			return fmt.Errorf("支付失败:%s", err)
 		}
-		err = srv.UpdataOrder(orderId, res.Valid)
+		err = srv.UpdataOrder(req.Order.Id, res.Valid)
 		if err != nil {
 			res.Valid = false
 			return fmt.Errorf("订单状态更新失败:%s", err)
@@ -96,7 +96,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			res.Valid = false
 			return fmt.Errorf("支付失败:%s", err)
 		}
-		err = srv.UpdataOrder(orderId, res.Valid)
+		err = srv.UpdataOrder(req.Order.Id, res.Valid)
 		if err != nil {
 			res.Valid = false
 			return fmt.Errorf("订单状态更新失败:%s", err)
