@@ -41,7 +41,7 @@ func alipay() {
 			id int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
 			app_id varchar(255) DEFAULT NULL COMMENT '应用ID',
 			private_key varchar(255) DEFAULT NULL COMMENT '私钥',
-			alipay_public_key varchar(255) DEFAULT NULL COMMENT '支付宝公钥',
+			ali_pay_public_key varchar(255) DEFAULT NULL COMMENT '支付宝公钥',
 			sign_type varchar(255) DEFAULT NULL COMMENT '签名方式',
 			PRIMARY KEY (id)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
