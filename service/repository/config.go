@@ -52,7 +52,7 @@ func (repo *ConfigRepository) Total(req *pb.ListQuery) (total int64, err error) 
 // Get 获取配置信息
 func (repo *ConfigRepository) Get(config *pb.Config) (*pb.Config, error) {
 	if config.Id != "" {
-		if err := repo.DB.Model(&config).Where("id = ?", config.Id).Find(&config).Error; err != nil {
+		if err := repo.DB.Where(&config).Find(&config).Error; err != nil {
 			return nil, err
 		}
 	}

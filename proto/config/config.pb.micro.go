@@ -34,6 +34,8 @@ var _ server.Option
 // Client API for Configs service
 
 type ConfigsService interface {
+	// 用户通过 token 自己更新支付数据
+	SelfUpdate(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error)
 	// 获取配置列表
 	List(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error)
 	// 根据 唯一 获取配置
@@ -56,6 +58,16 @@ func NewConfigsService(name string, c client.Client) ConfigsService {
 		c:    c,
 		name: name,
 	}
+}
+
+func (c *configsService) SelfUpdate(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error) {
+	req := c.c.NewRequest(c.name, "Configs.SelfUpdate", in)
+	out := new(Response)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *configsService) List(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error) {
@@ -111,6 +123,8 @@ func (c *configsService) Delete(ctx context.Context, in *Request, opts ...client
 // Server API for Configs service
 
 type ConfigsHandler interface {
+	// 用户通过 token 自己更新支付数据
+	SelfUpdate(context.Context, *Request, *Response) error
 	// 获取配置列表
 	List(context.Context, *Request, *Response) error
 	// 根据 唯一 获取配置
@@ -125,6 +139,7 @@ type ConfigsHandler interface {
 
 func RegisterConfigsHandler(s server.Server, hdlr ConfigsHandler, opts ...server.HandlerOption) error {
 	type configs interface {
+		SelfUpdate(ctx context.Context, in *Request, out *Response) error
 		List(ctx context.Context, in *Request, out *Response) error
 		Get(ctx context.Context, in *Request, out *Response) error
 		Create(ctx context.Context, in *Request, out *Response) error
@@ -140,6 +155,10 @@ func RegisterConfigsHandler(s server.Server, hdlr ConfigsHandler, opts ...server
 
 type configsHandler struct {
 	ConfigsHandler
+}
+
+func (h *configsHandler) SelfUpdate(ctx context.Context, in *Request, out *Response) error {
+	return h.ConfigsHandler.SelfUpdate(ctx, in, out)
 }
 
 func (h *configsHandler) List(ctx context.Context, in *Request, out *Response) error {

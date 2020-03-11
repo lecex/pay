@@ -23,7 +23,7 @@ func config() {
 			id varchar(36) NOT NULL COMMENT '商家ID(user_id)',
 			alipay_id int(11) DEFAULT 0 COMMENT '支付宝配置ID',
 			wechat_id int(11) DEFAULT 0 COMMENT '微信配置ID',
-			stauts int(11) DEFAULT '0' COMMENT '商品状态(禁用0、启用1)',
+			stauts int(11) DEFAULT '1' COMMENT '商品状态(禁用0、启用1)',
 			created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY (id)
