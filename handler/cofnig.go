@@ -22,19 +22,23 @@ func (srv *Config) SelfUpdate(ctx context.Context, req *pb.Request, res *pb.Resp
 	meta, _ := metadata.FromContext(ctx)
 	if userID, ok := meta["Userid"]; ok {
 		req.Config.Id = userID
-		config, err := srv.Repo.Get(req.Config)
-		if config == nil {
-			config, err = srv.Repo.Create(req.Config)
+		if srv.Repo.NewRecord(req.Config) {
+			config, err := srv.Repo.Create(req.Config)
+			if err != nil {
+				return err
+			}
+			res.Config = config
+			res.Valid = true
 		} else {
-			req.Config.Id = config.Id
-			_, err = srv.Repo.Update(req.Config)
+			res.Valid, err = srv.Repo.Update(req.Config)
+			if err != nil {
+				return err
+			}
+			res.Config = req.Config
 		}
 		if err != nil {
-			res.Valid = false
-			return fmt.Errorf("创建配置失败")
+			return err
 		}
-		res.Config = config
-		res.Valid = true
 		return err
 	} else {
 		return errors.New("更新用户失败,未找到用户ID")
@@ -56,11 +60,11 @@ func (srv *Config) List(ctx context.Context, req *pb.Request, res *pb.Response) 
 
 // Get 获取配置
 func (srv *Config) Get(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
-	config, err := srv.Repo.Get(req.Config)
+	err = srv.Repo.Get(req.Config)
 	if err != nil {
 		return err
 	}
-	res.Config = config
+	res.Config = req.Config
 	return err
 }
 

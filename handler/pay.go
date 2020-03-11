@@ -21,9 +21,9 @@ type Pay struct {
 
 // UserConfig 用户配置
 func (srv *Pay) UserConfig(userId string) (config *configPB.Config, err error) {
-	return srv.Config.Get(&configPB.Config{
-		Id: userId,
-	})
+	config.Id = userId
+	err = srv.Config.Get(config)
+	return config, err
 }
 
 // CreateOrder 创建订单

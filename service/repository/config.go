@@ -17,7 +17,8 @@ type Config interface {
 	Create(config *pb.Config) (*pb.Config, error)
 	Delete(config *pb.Config) (bool, error)
 	Update(config *pb.Config) (bool, error)
-	Get(config *pb.Config) (*pb.Config, error)
+	Get(config *pb.Config) error
+	NewRecord(config *pb.Config) bool
 }
 
 // ConfigRepository 配置仓库
@@ -35,6 +36,10 @@ func (repo *ConfigRepository) List(req *pb.ListQuery) (configs []*pb.Config, err
 		log.Log(err)
 		return nil, err
 	}
+	// 查询关联
+	for _, config := range configs {
+		repo.Related(config)
+	}
 	return configs, nil
 }
 
@@ -49,14 +54,19 @@ func (repo *ConfigRepository) Total(req *pb.ListQuery) (total int64, err error) 
 	return total, nil
 }
 
+// NewRecord 检测主键是否存在
+func (repo *ConfigRepository) NewRecord(config *pb.Config) bool {
+	return repo.DB.NewRecord(&config)
+}
+
 // Get 获取配置信息
-func (repo *ConfigRepository) Get(config *pb.Config) (*pb.Config, error) {
-	if config.Id != "" {
-		if err := repo.DB.Where(&config).Find(&config).Error; err != nil {
-			return nil, err
-		}
+func (repo *ConfigRepository) Get(config *pb.Config) error {
+	if err := repo.DB.Find(&config).Error; err != nil {
+		return err
 	}
-	return config, nil
+	// 查询关联
+	repo.Related(config)
+	return nil
 }
 
 // Create 创建配置
@@ -97,4 +107,24 @@ func (repo *ConfigRepository) Delete(config *pb.Config) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+// Related 关联处理
+func (repo *ConfigRepository) Related(config *pb.Config) (*pb.Config, error) {
+	Alipay := &pb.Alipay{}
+	if err := repo.DB.Model(&config).Related(Alipay).Error; err != nil {
+		if err.Error() != "record not found" {
+			return config, err
+		}
+	}
+
+	Wechat := &pb.Wechat{}
+	if err := repo.DB.Model(&config).Related(Wechat).Error; err != nil {
+		if err.Error() != "record not found" {
+			return config, err
+		}
+	}
+	config.Alipay = Alipay
+	config.Wechat = Wechat
+	return config, nil
 }
