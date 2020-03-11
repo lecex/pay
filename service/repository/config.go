@@ -54,7 +54,7 @@ func (repo *ConfigRepository) Total(req *pb.ListQuery) (total int64, err error) 
 	return total, nil
 }
 
-// NewRecord 检测主键是否存在
+// Exist 检测主键是否存在
 func (repo *ConfigRepository) Exist(config *pb.Config) bool {
 	var count int
 	repo.DB.Find(&config).Count(&count)
