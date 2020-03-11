@@ -2,10 +2,7 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"fmt"
-
-	"github.com/micro/go-micro/v2/metadata"
 
 	pb "github.com/lecex/pay/proto/config"
 	"github.com/lecex/pay/service/repository"
@@ -18,30 +15,22 @@ type Config struct {
 
 // SelfUpdate 用户通过 token 自己更新支付数据
 func (srv *Config) SelfUpdate(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
-	// meta["Userid"] 通过 meta 获取用户 id --- So this function needs token to use
-	meta, _ := metadata.FromContext(ctx)
-	if userID, ok := meta["Userid"]; ok {
-		req.Config.Id = userID
-		if srv.Repo.NewRecord(req.Config) {
-			config, err := srv.Repo.Create(req.Config)
-			if err != nil {
-				return err
-			}
-			res.Config = config
-			res.Valid = true
-		} else {
-			res.Valid, err = srv.Repo.Update(req.Config)
-			if err != nil {
-				return err
-			}
-			res.Config = req.Config
-		}
+	if srv.Repo.NewRecord(req.Config) {
+		config, err := srv.Repo.Create(req.Config)
 		if err != nil {
 			return err
 		}
-		return err
+		res.Config = config
+		res.Valid = true
 	} else {
-		return errors.New("更新用户失败,未找到用户ID")
+		res.Valid, err = srv.Repo.Update(req.Config)
+		if err != nil {
+			return err
+		}
+		res.Config = req.Config
+	}
+	if err != nil {
+		return err
 	}
 	return err
 }
