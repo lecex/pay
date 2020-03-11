@@ -40,7 +40,7 @@ func (srv *Config) Create(ctx context.Context, req *pb.Request, res *pb.Response
 	config, err := srv.Repo.Create(req.Config)
 	if err != nil {
 		res.Valid = false
-		return fmt.Errorf("创建配置失败")
+		return fmt.Errorf("创建配置失败:%s", err)
 	}
 	res.Config = config
 	res.Valid = true
@@ -52,7 +52,7 @@ func (srv *Config) Update(ctx context.Context, req *pb.Request, res *pb.Response
 	valid, err := srv.Repo.Update(req.Config)
 	if err != nil {
 		res.Valid = false
-		return fmt.Errorf("更新配置失败")
+		return fmt.Errorf("更新配置失败:%s", err)
 	}
 	res.Valid = valid
 	return err
@@ -63,7 +63,7 @@ func (srv *Config) Delete(ctx context.Context, req *pb.Request, res *pb.Response
 	valid, err := srv.Repo.Delete(req.Config)
 	if err != nil {
 		res.Valid = false
-		return fmt.Errorf("删除配置失败")
+		return fmt.Errorf("删除配置失败:%s", err)
 	}
 	res.Valid = valid
 	return err
