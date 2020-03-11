@@ -15,19 +15,19 @@ type Config struct {
 
 // SelfUpdate 用户通过 token 自己更新支付数据
 func (srv *Config) SelfUpdate(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
-	if srv.Repo.NewRecord(req.Config) {
+	if srv.Repo.Exist(req.Config) {
+		res.Valid, err = srv.Repo.Update(req.Config)
+		if err != nil {
+			return err
+		}
+		res.Config = req.Config
+	} else {
 		config, err := srv.Repo.Create(req.Config)
 		if err != nil {
 			return err
 		}
 		res.Config = config
 		res.Valid = true
-	} else {
-		res.Valid, err = srv.Repo.Update(req.Config)
-		if err != nil {
-			return err
-		}
-		res.Config = req.Config
 	}
 	if err != nil {
 		return err

@@ -18,7 +18,7 @@ type Config interface {
 	Delete(config *pb.Config) (bool, error)
 	Update(config *pb.Config) (bool, error)
 	Get(config *pb.Config) error
-	NewRecord(config *pb.Config) bool
+	Exist(config *pb.Config) bool
 }
 
 // ConfigRepository 配置仓库
@@ -55,8 +55,10 @@ func (repo *ConfigRepository) Total(req *pb.ListQuery) (total int64, err error) 
 }
 
 // NewRecord 检测主键是否存在
-func (repo *ConfigRepository) NewRecord(config *pb.Config) bool {
-	return repo.DB.NewRecord(&config)
+func (repo *ConfigRepository) Exist(config *pb.Config) bool {
+	var count int
+	repo.DB.Find(&config).Count(&count)
+	return count > 0
 }
 
 // Get 获取配置信息

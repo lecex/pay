@@ -9,11 +9,11 @@ service Pays {
 
 message Order {
     string id = 1;          // 订单 UUID 前端生产全局唯一
-    string store_id = 2;    // 商户门店编号 收款账号ID
+    string store_id = 2;    // 商户门店编号 userId 收款账号ID
     string method = 3;    // 付款方式 [支付宝、微信、银联等]
     string auth_code = 4; // 付款码
     string title = 5;   // 订单标题
-    string order_sn = 6; // 订单编号
+    string order_sn = 6; // 订单编号 UUID 前端生产全局唯一
     int64 total_amount = 7; // 订单总金额
     string operator_id = 8; // 商户操作员编号
     string terminal_id = 9; // 商户机具终端编号

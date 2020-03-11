@@ -10,10 +10,37 @@ import (
 	"github.com/lecex/pay/handler"
 )
 
+func TestConfigSelfUpdate(t *testing.T) {
+	req := &configPB.Request{
+		Config: &configPB.Config{
+			Id: `bvbv011511212`,
+			Alipay: &configPB.Alipay{
+				AppId:           `saasas`,
+				PrivateKey:      `asdfqwwqqw`,
+				AliPayPublicKey: `asasq`,
+				SignType:        `asasas`,
+			},
+			Wechat: &configPB.Wechat{
+				AppId:    `qwwxzas`,
+				MchId:    `aswsqwqw`,
+				ApiKey:   `aq121212`,
+				SubAppId: `asasqwqw`,
+				SubMchId: `swqqwqwqw`,
+			},
+		},
+	}
+	res := &configPB.Response{}
+	handler := &handler.Handler{}
+	h := handler.Config()
+	err := h.SelfUpdate(context.TODO(), req, res)
+	fmt.Println("ConfigGet", res, err)
+	t.Log(req, res, err)
+}
+
 func TestConfigGet(t *testing.T) {
 	req := &configPB.Request{
 		Config: &configPB.Config{
-			Id: `bvbv01151121`,
+			Id: `bvbv011511211`,
 			Alipay: &configPB.Alipay{
 				AppId:           `saasas`,
 				PrivateKey:      `asdfqwwqqw`,
@@ -33,7 +60,7 @@ func TestConfigGet(t *testing.T) {
 	handler := &handler.Handler{}
 	h := handler.Config()
 	err := h.Create(context.TODO(), req, res)
-	fmt.Println("ConfigGet", res, err)
+	// fmt.Println("ConfigGet", res, err)
 	t.Log(req, res, err)
 }
 
