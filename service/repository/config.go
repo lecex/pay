@@ -14,9 +14,9 @@ import (
 type Config interface {
 	List(req *pb.ListQuery) ([]*pb.Config, error)
 	Total(req *pb.ListQuery) (int64, error)
-	Create(config *pb.Config) (*pb.Config, error)
+	Create(config *pb.Config) error
 	Delete(config *pb.Config) (bool, error)
-	Update(config *pb.Config) (*pb.Config, error)
+	Update(config *pb.Config) error
 	Get(config *pb.Config) error
 	Exist(config *pb.Config) bool
 }
@@ -72,24 +72,24 @@ func (repo *ConfigRepository) Get(config *pb.Config) error {
 }
 
 // Create 创建配置
-func (repo *ConfigRepository) Create(config *pb.Config) (*pb.Config, error) {
+func (repo *ConfigRepository) Create(config *pb.Config) error {
 	err := repo.DB.Create(config).Error
 	if err != nil {
 		// 写入数据库未知失败记录
 		log.Log(err)
-		return config, fmt.Errorf("注册配置失败")
+		return fmt.Errorf("注册配置失败")
 	}
-	return config, nil
+	return nil
 }
 
 // Update 更新配置
-func (repo *ConfigRepository) Update(config *pb.Config) (*pb.Config, error) {
+func (repo *ConfigRepository) Update(config *pb.Config) error {
 	if config.Id == "" {
-		return config, fmt.Errorf("请传入更新id")
+		return fmt.Errorf("请传入更新id")
 	}
 	config.CreatedAt = ""
 	repo.DB.Model(config).Save(config)
-	return config, nil
+	return nil
 }
 
 // Delete 删除配置
@@ -117,21 +117,21 @@ func (repo *ConfigRepository) Delete(config *pb.Config) (valid bool, err error) 
 }
 
 // Related 关联处理
-func (repo *ConfigRepository) Related(config *pb.Config) (*pb.Config, error) {
+func (repo *ConfigRepository) Related(config *pb.Config) error {
 	Alipay := &pb.Alipay{}
 	if err := repo.DB.Model(&config).Related(Alipay).Error; err != nil {
 		if err.Error() != "record not found" {
-			return config, err
+			return err
 		}
 	}
 
 	Wechat := &pb.Wechat{}
 	if err := repo.DB.Model(&config).Related(Wechat).Error; err != nil {
 		if err.Error() != "record not found" {
-			return config, err
+			return err
 		}
 	}
 	config.Alipay = Alipay
 	config.Wechat = Wechat
-	return config, nil
+	return nil
 }

@@ -27,34 +27,34 @@ func (srv *Order) List(ctx context.Context, req *pb.Request, res *pb.Response) (
 
 // Get 获取订单
 func (srv *Order) Get(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
-	order, err := srv.Repo.Get(req.Order)
+	err = srv.Repo.Get(req.Order)
 	if err != nil {
 		return err
 	}
-	res.Order = order
+	res.Order = req.Order
 	return err
 }
 
 // Create 创建订单
 func (srv *Order) Create(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
-	order, err := srv.Repo.Create(req.Order)
+	err = srv.Repo.Create(req.Order)
 	if err != nil {
 		res.Valid = false
 		return fmt.Errorf("创建订单失败")
 	}
-	res.Order = order
+	res.Order = req.Order
 	res.Valid = true
 	return err
 }
 
 // Update 更新订单
 func (srv *Order) Update(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
-	order, err := srv.Repo.Update(req.Order)
+	err = srv.Repo.Update(req.Order)
 	if err != nil {
 		res.Valid = false
 		return fmt.Errorf("更新订单失败")
 	}
-	res.Order = order
+	res.Order = req.Order
 	return err
 }
 

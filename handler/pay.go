@@ -26,10 +26,10 @@ func (srv *Pay) UserConfig(userId string) (config *configPB.Config, err error) {
 	return config, err
 }
 
-// CreateOrder 创建订单
+// CreateOrder 处理订单
 func (srv *Pay) CreateOrder(order *pd.Order) (err error) {
-	_, err = srv.Order.Create(&orderPB.Order{
-		Id:          order.Id,
+	resOrder := &orderPB.Order{
+		Id:          order.Id,          // 订单编号 UUID 前端生产全局唯一
 		StoreId:     order.StoreId,     // 商户门店编号 收款账号ID userID
 		Method:      order.Method,      // 付款方式 [支付宝、微信、银联等]
 		AuthCode:    order.AuthCode,    // 付款码
@@ -38,13 +38,16 @@ func (srv *Pay) CreateOrder(order *pd.Order) (err error) {
 		OperatorId:  order.OperatorId,  // 商户操作员编号
 		TerminalId:  order.TerminalId,  // 商户机具终端编号
 		Stauts:      false,             // 订单状态 默认状态未付款
-	})
-	return
+	}
+	if !srv.Order.Exist(resOrder) {
+		err = srv.Order.Create(resOrder)
+	}
+	return err
 }
 
 // UpdataOrder 更新订单状态
 func (srv *Pay) UpdataOrder(orderId string, stauts bool) (err error) {
-	_, err = srv.Order.Update(&orderPB.Order{
+	err = srv.Order.Update(&orderPB.Order{
 		Id:     orderId,
 		Stauts: stauts, // 订单状态 默认状态未付款
 	})

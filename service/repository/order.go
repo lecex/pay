@@ -14,10 +14,11 @@ import (
 type Order interface {
 	List(req *pb.ListQuery) ([]*pb.Order, error)
 	Total(req *pb.ListQuery) (int64, error)
-	Create(order *pb.Order) (*pb.Order, error)
+	Create(order *pb.Order) error
 	Delete(order *pb.Order) (bool, error)
-	Update(order *pb.Order) (*pb.Order, error)
-	Get(order *pb.Order) (*pb.Order, error)
+	Update(order *pb.Order) error
+	Get(order *pb.Order) error
+	Exist(config *pb.Order) bool
 }
 
 // OrderRepository 订单仓库
@@ -49,39 +50,46 @@ func (repo *OrderRepository) Total(req *pb.ListQuery) (total int64, err error) {
 	return total, nil
 }
 
+// Exist 检测主键是否存在
+func (repo *OrderRepository) Exist(order *pb.Order) bool {
+	var count int
+	repo.DB.Model(&order).Count(&count)
+	return count > 0
+}
+
 // Get 获取订单信息
-func (repo *OrderRepository) Get(order *pb.Order) (*pb.Order, error) {
+func (repo *OrderRepository) Get(order *pb.Order) error {
 	if order.Id != "" {
 		if err := repo.DB.Model(&order).Where("id = ?", order.Id).Find(&order).Error; err != nil {
-			return nil, err
+			return err
 		}
 	}
-	return order, nil
+	return nil
 }
 
 // Create 创建订单
-func (repo *OrderRepository) Create(order *pb.Order) (*pb.Order, error) {
+func (repo *OrderRepository) Create(order *pb.Order) error {
 	err := repo.DB.Create(order).Error
 	if err != nil {
 		// 写入数据库未知失败记录
 		log.Log(err)
-		return order, fmt.Errorf("注册订单失败")
+		return fmt.Errorf("注册订单失败")
 	}
-	return order, nil
+	return nil
 }
 
 // Update 更新订单
-func (repo *OrderRepository) Update(order *pb.Order) (*pb.Order, error) {
+func (repo *OrderRepository) Update(order *pb.Order) error {
 	if order.Id == "" {
-		return order, fmt.Errorf("请传入更新id")
+		return fmt.Errorf("请传入更新id")
 	}
 	order.CreatedAt = ""
 	err := repo.DB.Model(order).Save(order).Error
 	if err != nil {
 		log.Log(err)
-		return order, err
+		return err
 	}
-	return order, err
+	return err
 }
 
 // Delete 删除订单
