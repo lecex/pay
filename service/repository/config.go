@@ -87,10 +87,8 @@ func (repo *ConfigRepository) Update(config *pb.Config) (*pb.Config, error) {
 	if config.Id == "" {
 		return config, fmt.Errorf("请传入更新id")
 	}
-	id := &pb.Config{
-		Id: config.Id,
-	}
-	repo.DB.Model(id).Save(config)
+	config.CreatedAt = ""
+	repo.DB.Model(config).Save(config)
 	return config, nil
 }
 
