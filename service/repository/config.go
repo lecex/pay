@@ -93,11 +93,22 @@ func (repo *ConfigRepository) Update(config *pb.Config) (*pb.Config, error) {
 }
 
 // Delete 删除配置
-func (repo *ConfigRepository) Delete(config *pb.Config) (bool, error) {
-	id := &pb.Config{
-		Id: config.Id,
+func (repo *ConfigRepository) Delete(config *pb.Config) (valid bool, err error) {
+	if config.Id == "" {
+		return valid, fmt.Errorf("请传入更新id")
 	}
-	err := repo.DB.Delete(id).Error
+	repo.Get(config) //查询关联数据
+	err = repo.DB.Delete(config).Error
+	if err != nil {
+		log.Log(err)
+		return false, err
+	}
+	err = repo.DB.Delete(config.Alipay).Error // 删除关联
+	if err != nil {
+		log.Log(err)
+		return false, err
+	}
+	err = repo.DB.Delete(config.Wechat).Error // 删除关联
 	if err != nil {
 		log.Log(err)
 		return false, err
