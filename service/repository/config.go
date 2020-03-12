@@ -90,7 +90,7 @@ func (repo *ConfigRepository) Update(config *pb.Config) (bool, error) {
 	id := &pb.Config{
 		Id: config.Id,
 	}
-	err := repo.DB.Model(id).Updates(config).Error
+	err := repo.DB.Model(id).Omit("CreatedAt").Updates(config).Error
 	if err != nil {
 		log.Log(err)
 		return false, err
