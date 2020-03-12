@@ -16,7 +16,7 @@ type Config interface {
 	Total(req *pb.ListQuery) (int64, error)
 	Create(config *pb.Config) (*pb.Config, error)
 	Delete(config *pb.Config) (bool, error)
-	Update(config *pb.Config) (bool, error)
+	Update(config *pb.Config) (*pb.Config, error)
 	Get(config *pb.Config) error
 	Exist(config *pb.Config) bool
 }
@@ -57,7 +57,7 @@ func (repo *ConfigRepository) Total(req *pb.ListQuery) (total int64, err error) 
 // Exist 检测主键是否存在
 func (repo *ConfigRepository) Exist(config *pb.Config) bool {
 	var count int
-	repo.DB.Find(&config).Count(&count)
+	repo.DB.Model(&config).Count(&count)
 	return count > 0
 }
 
@@ -83,19 +83,15 @@ func (repo *ConfigRepository) Create(config *pb.Config) (*pb.Config, error) {
 }
 
 // Update 更新配置
-func (repo *ConfigRepository) Update(config *pb.Config) (bool, error) {
+func (repo *ConfigRepository) Update(config *pb.Config) (*pb.Config, error) {
 	if config.Id == "" {
-		return false, fmt.Errorf("请传入更新id")
+		return config, fmt.Errorf("请传入更新id")
 	}
 	id := &pb.Config{
 		Id: config.Id,
 	}
-	err := repo.DB.Model(id).Omit("CreatedAt").Updates(config).Error
-	if err != nil {
-		log.Log(err)
-		return false, err
-	}
-	return true, nil
+	repo.DB.Model(id).Save(config)
+	return config, nil
 }
 
 // Delete 删除配置

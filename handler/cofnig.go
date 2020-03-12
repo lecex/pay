@@ -16,11 +16,11 @@ type Config struct {
 // SelfUpdate 用户通过 token 自己更新支付数据
 func (srv *Config) SelfUpdate(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
 	if srv.Repo.Exist(req.Config) {
-		res.Valid, err = srv.Repo.Update(req.Config)
+		config, err := srv.Repo.Update(req.Config)
 		if err != nil {
 			return err
 		}
-		res.Config = req.Config
+		res.Config = config
 	} else {
 		config, err := srv.Repo.Create(req.Config)
 		if err != nil {
@@ -71,12 +71,12 @@ func (srv *Config) Create(ctx context.Context, req *pb.Request, res *pb.Response
 
 // Update 更新配置
 func (srv *Config) Update(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
-	valid, err := srv.Repo.Update(req.Config)
+	config, err := srv.Repo.Update(req.Config)
 	if err != nil {
 		res.Valid = false
 		return fmt.Errorf("更新配置失败")
 	}
-	res.Valid = valid
+	res.Config = config
 	return err
 }
 
