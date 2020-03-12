@@ -34,7 +34,6 @@ func (srv *Pay) CreateOrder(order *pd.Order) (err error) {
 		Method:      order.Method,      // 付款方式 [支付宝、微信、银联等]
 		AuthCode:    order.AuthCode,    // 付款码
 		Title:       order.Title,       // 订单标题
-		OrderSn:     order.OrderSn,     // 订单编号
 		TotalAmount: order.TotalAmount, // 订单总金额
 		OperatorId:  order.OperatorId,  // 商户操作员编号
 		TerminalId:  order.TerminalId,  // 商户机具终端编号

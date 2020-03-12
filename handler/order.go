@@ -49,12 +49,12 @@ func (srv *Order) Create(ctx context.Context, req *pb.Request, res *pb.Response)
 
 // Update 更新订单
 func (srv *Order) Update(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
-	valid, err := srv.Repo.Update(req.Order)
+	order, err := srv.Repo.Update(req.Order)
 	if err != nil {
 		res.Valid = false
 		return fmt.Errorf("更新订单失败")
 	}
-	res.Valid = valid
+	res.Order = order
 	return err
 }
 

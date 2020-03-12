@@ -16,7 +16,7 @@ type Order interface {
 	Total(req *pb.ListQuery) (int64, error)
 	Create(order *pb.Order) (*pb.Order, error)
 	Delete(order *pb.Order) (bool, error)
-	Update(order *pb.Order) (bool, error)
+	Update(order *pb.Order) (*pb.Order, error)
 	Get(order *pb.Order) (*pb.Order, error)
 }
 
@@ -71,19 +71,17 @@ func (repo *OrderRepository) Create(order *pb.Order) (*pb.Order, error) {
 }
 
 // Update 更新订单
-func (repo *OrderRepository) Update(order *pb.Order) (bool, error) {
+func (repo *OrderRepository) Update(order *pb.Order) (*pb.Order, error) {
 	if order.Id == "" {
-		return false, fmt.Errorf("请传入更新id")
+		return order, fmt.Errorf("请传入更新id")
 	}
-	id := &pb.Order{
-		Id: order.Id,
-	}
-	err := repo.DB.Model(id).Updates(order).Error
+	order.CreatedAt = ""
+	err := repo.DB.Model(order).Save(order).Error
 	if err != nil {
 		log.Log(err)
-		return false, err
+		return order, err
 	}
-	return true, nil
+	return order, err
 }
 
 // Delete 删除订单

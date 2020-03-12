@@ -36,7 +36,7 @@ func (srv *Wechat) AopF2F(order *proto.Order) (ok bool, err error) {
 	request.QueryParams = map[string]string{
 		"auth_code":        order.AuthCode,
 		"body":             order.Title,
-		"out_trade_no":     order.OrderSn,
+		"out_trade_no":     order.Id,
 		"total_fee":        strconv.FormatInt(order.TotalAmount, 10),
 		"spbill_create_ip": "127.0.0.1",
 	}
