@@ -20,9 +20,11 @@ type Pay struct {
 }
 
 // UserConfig 用户配置
-func (srv *Pay) UserConfig(userId string) (config *configPB.Config, err error) {
-	config.Id = userId
-	err = srv.Config.Get(config)
+func (srv *Pay) UserConfig(userId string) (*configPB.Config, error) {
+	config := &configPB.Config{
+		Id: userId,
+	}
+	err := srv.Config.Get(config)
 	return config, err
 }
 
