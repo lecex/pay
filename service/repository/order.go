@@ -84,12 +84,7 @@ func (repo *OrderRepository) Update(order *pb.Order) error {
 		return fmt.Errorf("请传入更新id")
 	}
 	order.CreatedAt = ""
-	err := repo.DB.Model(order).Save(order).Error
-	if err != nil {
-		log.Log(err)
-		return err
-	}
-	return err
+	return repo.DB.Model(order).Save(order).Error
 }
 
 // Delete 删除订单

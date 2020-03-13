@@ -47,15 +47,6 @@ func (srv *Pay) CreateOrder(order *pd.Order) (err error) {
 	return err
 }
 
-// UpdataOrder 更新订单状态
-func (srv *Pay) UpdataOrder(orderID string, stauts bool) (err error) {
-	err = srv.Order.Update(&orderPB.Order{
-		Id:     orderID,
-		Stauts: stauts, // 订单状态 默认状态未付款
-	})
-	return
-}
-
 // AopF2F 商家扫用户付款码
 func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
 	config, err := srv.UserConfig(req.Order.StoreId)
@@ -81,7 +72,10 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			res.Valid = false
 			return fmt.Errorf("支付失败:%s", err)
 		}
-		err = srv.UpdataOrder(req.Order.Id, res.Valid)
+		err = srv.Order.Update(&orderPB.Order{
+			Id:     req.Order.Id,
+			Stauts: true, // 订单状态 默认状态未付款
+		})
 		if err != nil {
 			res.Valid = false
 			return fmt.Errorf("订单状态更新失败:%s", err)
@@ -100,7 +94,10 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			res.Valid = false
 			return fmt.Errorf("支付失败:%s", err)
 		}
-		err = srv.UpdataOrder(req.Order.Id, res.Valid)
+		err = srv.Order.Update(&orderPB.Order{
+			Id:     req.Order.Id,
+			Stauts: true, // 订单状态 默认状态未付款
+		})
 		if err != nil {
 			res.Valid = false
 			return fmt.Errorf("订单状态更新失败:%s", err)
