@@ -20,9 +20,9 @@ type Pay struct {
 }
 
 // UserConfig 用户配置
-func (srv *Pay) UserConfig(userId string) (*configPB.Config, error) {
+func (srv *Pay) UserConfig(userID string) (*configPB.Config, error) {
 	config := &configPB.Config{
-		Id: userId,
+		Id: userID,
 	}
 	err := srv.Config.Get(config)
 	return config, err
@@ -48,9 +48,9 @@ func (srv *Pay) CreateOrder(order *pd.Order) (err error) {
 }
 
 // UpdataOrder 更新订单状态
-func (srv *Pay) UpdataOrder(orderId string, stauts bool) (err error) {
+func (srv *Pay) UpdataOrder(orderID string, stauts bool) (err error) {
 	err = srv.Order.Update(&orderPB.Order{
-		Id:     orderId,
+		Id:     orderID,
 		Stauts: stauts, // 订单状态 默认状态未付款
 	})
 	return

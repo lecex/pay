@@ -73,11 +73,11 @@ func order() {
 	if !db.DB.HasTable(&order) {
 		db.DB.Exec(`
 			CREATE TABLE orders (
-			id varchar(36) NOT NULL COMMENT '订单ID',
+			id varchar(36) NOT NULL COMMENT '订单ID编号',
+			store_id varchar(128) DEFAULT NULL COMMENT '商家ID',
 			method varchar(36) DEFAULT NULL COMMENT '付款方式 [支付宝、微信、银联等]',
 			auth_code varchar(36) DEFAULT NULL COMMENT '付款码',
 			title varchar(128) DEFAULT NULL COMMENT '订单标题',
-			order_sn varchar(128) DEFAULT NULL COMMENT '订单编号',
 			total_amount int(16) DEFAULT NULL COMMENT '订单总金额',
 			operator_id int(16) DEFAULT NULL COMMENT '商户操作员编号',
 			terminal_id int(16) DEFAULT NULL COMMENT '商户机具终端编号',
