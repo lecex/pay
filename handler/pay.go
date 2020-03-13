@@ -83,7 +83,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		res.Valid, err = srv.Alipay.AopF2F(req.Order)
 		if err != nil {
 			res.Valid = false
-			return fmt.Errorf("支付失败:%s", err)
+			return fmt.Errorf("code:%s %s", err["code"], err["sub_msg"])
 		}
 		err = srv.Order.Update(&orderPB.Order{
 			Id:     req.Order.Id,
