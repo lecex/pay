@@ -23,7 +23,7 @@ message Alipay {
     string private_key = 3;
     string ali_pay_public_key = 4;
     string sign_type = 5;
-    int64 sandbox = 6;
+    bool sandbox = 6;
 }
 
 message Wechat {
@@ -33,7 +33,7 @@ message Wechat {
     string api_key = 4;
     string sub_app_id = 5;
     string sub_mch_id = 6;
-    int64 sandbox = 7;
+    bool sandbox = 7;
 }
 
 message Config {
