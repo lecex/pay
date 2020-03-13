@@ -2,8 +2,10 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/jinzhu/gorm"
 	configPB "github.com/lecex/pay/proto/config"
 	orderPB "github.com/lecex/pay/proto/order"
 	pd "github.com/lecex/pay/proto/pay"
@@ -28,8 +30,8 @@ func (srv *Pay) UserConfig(userID string) (*configPB.Config, error) {
 	return config, err
 }
 
-// CreateOrder 处理订单
-func (srv *Pay) CreateOrder(order *pd.Order) (err error) {
+// HanderOrder 处理订单
+func (srv *Pay) HanderOrder(order *pd.Order) (stauts bool, err error) {
 	resOrder := &orderPB.Order{
 		Id:          order.Id,          // 订单编号 UUID 前端生产全局唯一
 		StoreId:     order.StoreId,     // 商户门店编号 收款账号ID userID
@@ -41,10 +43,15 @@ func (srv *Pay) CreateOrder(order *pd.Order) (err error) {
 		TerminalId:  order.TerminalId,  // 商户机具终端编号
 		Stauts:      false,             // 订单状态 默认状态未付款
 	}
-	if !srv.Order.Exist(resOrder) {
+	err = srv.Order.Get(resOrder)
+	if resOrder.StoreId != order.StoreId || resOrder.Method != order.Method || resOrder.AuthCode != order.AuthCode || resOrder.TotalAmount != order.TotalAmount {
+		return false, errors.New("上报订单已存在,但数据校验失败")
+	}
+	if err == gorm.ErrRecordNotFound {
 		err = srv.Order.Create(resOrder)
 	}
-	return err
+	stauts = resOrder.Stauts
+	return stauts, err
 }
 
 // AopF2F 商家扫用户付款码
@@ -54,10 +61,13 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		res.Valid = false
 		return fmt.Errorf("查询配置信息失败:%s", err)
 	}
-	err = srv.CreateOrder(req.Order) //创建订单返回订单ID
+	res.Valid, err = srv.HanderOrder(req.Order) //创建订单返回订单ID
 	if err != nil {
 		res.Valid = false
 		return fmt.Errorf("创建订单失败:%s", err)
+	}
+	if res.Valid {
+		return err // 支付成功返回
 	}
 	switch req.Order.Method {
 	case "alipay":
