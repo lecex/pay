@@ -43,6 +43,7 @@ func alipay() {
 			private_key varchar(255) DEFAULT NULL COMMENT '私钥',
 			ali_pay_public_key varchar(255) DEFAULT NULL COMMENT '支付宝公钥',
 			sign_type varchar(255) DEFAULT NULL COMMENT '签名方式',
+			sandbox int(11) DEFAULT 0 COMMENT '沙盒模式(禁用0、启用1)',
 			PRIMARY KEY (id)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 		`)
@@ -61,6 +62,7 @@ func wechat() {
 			api_key varchar(255) DEFAULT NULL COMMENT 'API秘钥',
 			sub_app_id varchar(255) DEFAULT NULL COMMENT '子应用ID',
 			sub_mch_id varchar(255) DEFAULT NULL COMMENT '子商家ID',
+			sandbox int(11) DEFAULT 0 COMMENT '沙盒模式(禁用0、启用1)',
 			PRIMARY KEY (id)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 		`)

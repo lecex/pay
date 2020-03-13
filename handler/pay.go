@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/jinzhu/gorm"
 	configPB "github.com/lecex/pay/proto/config"
@@ -57,15 +56,15 @@ func (srv *Pay) HanderOrder(order *pd.Order) (stauts bool, err error) {
 
 // AopF2F 商家扫用户付款码
 func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
-	fmt.Println("AopF2F:%s", time.Now())
 	config, err := srv.UserConfig(req.Order.StoreId)
-	fmt.Println("UserConfig:%s", time.Now())
 	if err != nil {
 		res.Valid = false
 		return fmt.Errorf("查询配置信息失败:%s", err)
 	}
+	if !config.Stauts {
+		return fmt.Errorf("支付功能被禁用！请联系管理员。")
+	}
 	res.Valid, err = srv.HanderOrder(req.Order) //创建订单返回订单ID
-	fmt.Println("HanderOrder:%s", time.Now())
 	if err != nil {
 		res.Valid = false
 		return fmt.Errorf("创建订单失败:%s", err)
@@ -80,10 +79,8 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			"PrivateKey":      config.Alipay.PrivateKey,
 			"AliPayPublicKey": config.Alipay.AliPayPublicKey,
 			"SignType":        config.Alipay.SignType,
-		}, true)
+		}, config.Alipay.Sandbox)
 		res.Valid, err = srv.Alipay.AopF2F(req.Order)
-		fmt.Println("Alipay:%s", time.Now())
-		fmt.Println("Alipay:%s 1 %s", res.Valid, err)
 		if err != nil {
 			res.Valid = false
 			return fmt.Errorf("支付失败:%s", err)
@@ -92,7 +89,6 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			Id:     req.Order.Id,
 			Stauts: true, // 订单状态 默认状态未付款
 		})
-		fmt.Println("Update:%s", time.Now())
 		if err != nil {
 			res.Valid = false
 			return fmt.Errorf("订单状态更新失败:%s", err)
@@ -105,7 +101,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			"ApiKey":   config.Wechat.ApiKey,
 			"SubAppId": config.Wechat.SubAppId,
 			"SubMchId": config.Wechat.SubMchId,
-		}, true)
+		}, config.Wechat.Sandbox)
 		res.Valid, err = srv.Wechat.AopF2F(req.Order)
 		if err != nil {
 			res.Valid = false
