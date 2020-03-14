@@ -83,7 +83,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		res.Valid, err = srv.Alipay.AopF2F(req.Order)
 		if err != nil {
 			res.Valid = false
-			return fmt.Errorf(err)
+			return err
 		}
 		err = srv.Order.Update(&orderPB.Order{
 			Id:     req.Order.Id,
@@ -105,7 +105,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		res.Valid, err = srv.Wechat.AopF2F(req.Order)
 		if err != nil {
 			res.Valid = false
-			return fmt.Errorf(err)
+			return err
 		}
 		err = srv.Order.Update(&orderPB.Order{
 			Id:     req.Order.Id,
