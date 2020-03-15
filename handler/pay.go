@@ -70,6 +70,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		return fmt.Errorf("创建订单失败:%s", err)
 	}
 	if srv.OrderDB.Stauts {
+		res.Valid = true
 		return err // 支付成功返回
 	}
 	switch req.Order.Method {
