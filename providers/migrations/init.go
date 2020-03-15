@@ -21,7 +21,7 @@ func config() {
 		db.DB.Exec(`
 			CREATE TABLE configs (
 			id varchar(36) NOT NULL COMMENT '商家ID(user_id)',
-			name varchar(64) DEFAULT NULL COMMENT '用户名',
+			username varchar(64) DEFAULT NULL COMMENT '用户名',
 			alipay_id int(11) DEFAULT 0 COMMENT '支付宝配置ID',
 			wechat_id int(11) DEFAULT 0 COMMENT '微信配置ID',
 			stauts int(11) DEFAULT 1 COMMENT '商品状态(禁用0、启用1)',
