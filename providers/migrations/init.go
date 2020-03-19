@@ -82,7 +82,7 @@ func order() {
 			auth_code varchar(36) DEFAULT NULL COMMENT '付款码',
 			title varchar(128) DEFAULT NULL COMMENT '订单标题',
 			total_amount int(16) DEFAULT NULL COMMENT '订单总金额',
-			order_no string(36) DEFAULT NULL COMMENT '商家订单编号',
+			order_no varchar(36) DEFAULT NULL COMMENT '商家订单编号',
 			operator_id varchar(16) DEFAULT NULL COMMENT '商户操作员编号',
 			terminal_id varchar(16) DEFAULT NULL COMMENT '商户机具终端编号',
 			stauts int(11) DEFAULT 0 DEFAULT NULL COMMENT '订单状态 [-1 订单关闭,0 待付款,1 付款成功]',
