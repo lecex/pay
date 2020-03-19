@@ -65,6 +65,14 @@ func (repo *OrderRepository) Get(order *pb.Order) error {
 	return nil
 }
 
+// StoreIdAndOrderNoGet 根据 商家iD 订单ID获取
+func (repo *OrderRepository) StoreIdAndOrderNoGet(order *pb.Order) error {
+	if err := repo.DB.Where("store_id = ?", order.StoreId).Where("order_no = ?", order.OrderNo).Find(&order).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 // Create 创建订单
 func (repo *OrderRepository) Create(order *pb.Order) error {
 	err := repo.DB.Create(order).Error

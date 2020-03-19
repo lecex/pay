@@ -44,7 +44,7 @@ func (srv *Pay) HanderOrder(order *pd.Order) (err error) {
 		TerminalId:  order.TerminalId,  // 商户机具终端编号
 		Stauts:      false,             // 订单状态 默认状态未付款
 	}
-	err = srv.Order.Get(srv.OrderDB)
+	err = srv.Order.StoreIdAndOrderNoGetGet(srv.OrderDB)
 	if srv.OrderDB.StoreId != order.StoreId || srv.OrderDB.OrderNo != order.OrderNo || srv.OrderDB.Method != order.Method || srv.OrderDB.AuthCode != order.AuthCode || srv.OrderDB.TotalAmount != order.TotalAmount {
 		return errors.New("上报订单已存在,但数据校验失败")
 	}
