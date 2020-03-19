@@ -18,6 +18,7 @@ type Order interface {
 	Delete(order *pb.Order) (bool, error)
 	Update(order *pb.Order) error
 	Get(order *pb.Order) error
+	StoreIdAndOrderNoGetGet(order *pb.Order) error
 	Exist(config *pb.Order) bool
 }
 
