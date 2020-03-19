@@ -11,5 +11,6 @@ require (
 	github.com/lecex/core v1.0.6
 	github.com/lecex/pay-api v0.0.0-20200315095500-305107eb57aa // indirect
 	github.com/micro/go-micro/v2 v2.2.0
+	github.com/satori/go.uuid v1.2.0
 	github.com/shopspring/decimal v0.0.0-20200227202807-02e2044944cc
 )

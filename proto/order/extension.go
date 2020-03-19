@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	uuid "github.com/satori/go.uuid"
 )
 
 // TimeLayout 转换字符
@@ -16,6 +17,11 @@ func dateTime() string {
 
 // BeforeCreate 插入前数据处理
 func (p *Order) BeforeCreate(scope *gorm.Scope) (err error) {
+	uuid := uuid.NewV4()
+	err = scope.SetColumn("Id", uuid.String())
+	if err != nil {
+		return err
+	}
 	err = scope.SetColumn("CreatedAt", dateTime())
 	if err != nil {
 		return err
