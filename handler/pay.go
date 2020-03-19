@@ -34,18 +34,18 @@ func (srv *Pay) UserConfig(userID string) (*configPB.Config, error) {
 // HanderOrder 处理订单
 func (srv *Pay) HanderOrder(order *pd.Order) (err error) {
 	srv.OrderDB = &orderPB.Order{
-		Id:          order.Id,          // 订单编号 UUID 前端生产全局唯一
 		StoreId:     order.StoreId,     // 商户门店编号 收款账号ID userID
 		Method:      order.Method,      // 付款方式 [支付宝、微信、银联等]
 		AuthCode:    order.AuthCode,    // 付款码
 		Title:       order.Title,       // 订单标题
 		TotalAmount: order.TotalAmount, // 订单总金额
+		OrderNo:     order.OrderNo,     // 订单编号
 		OperatorId:  order.OperatorId,  // 商户操作员编号
 		TerminalId:  order.TerminalId,  // 商户机具终端编号
 		Stauts:      false,             // 订单状态 默认状态未付款
 	}
 	err = srv.Order.Get(srv.OrderDB)
-	if srv.OrderDB.StoreId != order.StoreId || srv.OrderDB.Method != order.Method || srv.OrderDB.AuthCode != order.AuthCode || srv.OrderDB.TotalAmount != order.TotalAmount {
+	if srv.OrderDB.StoreId != order.StoreId || srv.OrderDB.OrderNo != order.OrderNo || srv.OrderDB.Method != order.Method || srv.OrderDB.AuthCode != order.AuthCode || srv.OrderDB.TotalAmount != order.TotalAmount {
 		return errors.New("上报订单已存在,但数据校验失败")
 	}
 	if err == gorm.ErrRecordNotFound {

@@ -8,12 +8,12 @@ service Pays {
 }
 
 message Order {
-    string id = 1; // 订单编号 UUID 前端生产全局唯一
-    string store_id = 2;    // 商户门店编号 userId 收款账号ID
-    string method = 3;    // 付款方式 [支付宝、微信、银联等]
-    string auth_code = 4; // 付款码
-    string title = 5;   // 订单标题
-    int64 total_amount = 6; // 订单总金额
+    string store_id = 1;    // 商户门店编号 userId 收款账号ID
+    string method = 2;    // 付款方式 [支付宝、微信、银联等]
+    string auth_code = 3; // 付款码
+    string title = 4;   // 订单标题
+    int64 total_amount = 5; // 订单总金额
+    string order_no = 6;    // 订单编号
     string operator_id = 7; // 商户操作员编号
     string terminal_id = 8; // 商户机具终端编号
     string created_at = 9;

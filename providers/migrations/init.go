@@ -76,18 +76,20 @@ func order() {
 	if !db.DB.HasTable(&order) {
 		db.DB.Exec(`
 			CREATE TABLE orders (
-			id varchar(36) NOT NULL COMMENT '订单ID编号',
+			id varchar(36) NOT NULL COMMENT '订单ID',
 			store_id varchar(128) DEFAULT NULL COMMENT '商家ID',
 			method varchar(36) DEFAULT NULL COMMENT '付款方式 [支付宝、微信、银联等]',
 			auth_code varchar(36) DEFAULT NULL COMMENT '付款码',
 			title varchar(128) DEFAULT NULL COMMENT '订单标题',
 			total_amount int(16) DEFAULT NULL COMMENT '订单总金额',
+			order_no string(36) DEFAULT NULL COMMENT '商家订单编号',
 			operator_id varchar(16) DEFAULT NULL COMMENT '商户操作员编号',
 			terminal_id varchar(16) DEFAULT NULL COMMENT '商户机具终端编号',
 			stauts int(11) DEFAULT 0 DEFAULT NULL COMMENT '订单状态 [-1 订单关闭,0 待付款,1 付款成功]',
 			created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-			PRIMARY KEY (id)
+			PRIMARY KEY (id),
+			UNIQUE KEY store_id_AND_order_no (store_id,order_no)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 		`)
 	}
