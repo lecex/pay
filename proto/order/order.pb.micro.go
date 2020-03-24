@@ -34,6 +34,8 @@ var _ server.Option
 // Client API for Orders service
 
 type OrdersService interface {
+	// 查询总和
+	Amount(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error)
 	// 获取订单列表
 	List(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error)
 	// 根据 唯一 获取订单
@@ -56,6 +58,16 @@ func NewOrdersService(name string, c client.Client) OrdersService {
 		c:    c,
 		name: name,
 	}
+}
+
+func (c *ordersService) Amount(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error) {
+	req := c.c.NewRequest(c.name, "Orders.Amount", in)
+	out := new(Response)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *ordersService) List(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error) {
@@ -111,6 +123,8 @@ func (c *ordersService) Delete(ctx context.Context, in *Request, opts ...client.
 // Server API for Orders service
 
 type OrdersHandler interface {
+	// 查询总和
+	Amount(context.Context, *Request, *Response) error
 	// 获取订单列表
 	List(context.Context, *Request, *Response) error
 	// 根据 唯一 获取订单
@@ -125,6 +139,7 @@ type OrdersHandler interface {
 
 func RegisterOrdersHandler(s server.Server, hdlr OrdersHandler, opts ...server.HandlerOption) error {
 	type orders interface {
+		Amount(ctx context.Context, in *Request, out *Response) error
 		List(ctx context.Context, in *Request, out *Response) error
 		Get(ctx context.Context, in *Request, out *Response) error
 		Create(ctx context.Context, in *Request, out *Response) error
@@ -140,6 +155,10 @@ func RegisterOrdersHandler(s server.Server, hdlr OrdersHandler, opts ...server.H
 
 type ordersHandler struct {
 	OrdersHandler
+}
+
+func (h *ordersHandler) Amount(ctx context.Context, in *Request, out *Response) error {
+	return h.OrdersHandler.Amount(ctx, in, out)
 }
 
 func (h *ordersHandler) List(ctx context.Context, in *Request, out *Response) error {

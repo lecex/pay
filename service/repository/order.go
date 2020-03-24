@@ -12,6 +12,7 @@ import (
 
 //Order 仓库接口
 type Order interface {
+	Amount(req *pb.ListQuery) (int64, error)
 	List(req *pb.ListQuery) ([]*pb.Order, error)
 	Total(req *pb.ListQuery) (int64, error)
 	Create(order *pb.Order) error
@@ -25,6 +26,16 @@ type Order interface {
 // OrderRepository 订单仓库
 type OrderRepository struct {
 	DB *gorm.DB
+}
+
+// Amount 获取所有订单查询总量
+func (repo *OrderRepository) Amount(req *pb.ListQuery) (total int64, err error) {
+	err = repo.DB.Table("orders").Select("SUM(total_amount) AS amount").Where(req.Where).Scan(&total).Error
+	if err != nil {
+		log.Log(err)
+		return total, err
+	}
+	return total, nil
 }
 
 // List 获取所有订单信息

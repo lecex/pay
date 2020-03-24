@@ -3,6 +3,8 @@ syntax = "proto3";
 package order;
 
 service Orders {
+    // 查询总和
+    rpc Amount(Request) returns (Response) {}
     // 获取订单列表
     rpc List(Request) returns (Response) {}
     // 根据 唯一 获取订单
