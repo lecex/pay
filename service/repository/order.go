@@ -29,8 +29,9 @@ type OrderRepository struct {
 }
 
 // Amount 获取所有订单查询总量
-func (repo *OrderRepository) Amount(req *pb.ListQuery) (total int64, err error) {
-	err = repo.DB.Table("orders").Select("SUM(total_amount) AS amount").Where(req.Where).Scan(&total).Error
+func (repo *OrderRepository) Amount(req *pb.ListQuery) (int64, error) {
+	total := 0
+	err := repo.DB.Table("orders").Select("SUM(total_amount) AS amount").Where(req.Where).Scan(&total).Error
 	if err != nil {
 		log.Log(err)
 		return total, err
