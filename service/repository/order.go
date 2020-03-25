@@ -29,14 +29,17 @@ type OrderRepository struct {
 }
 
 // Amount 获取所有订单查询总量
-func (repo *OrderRepository) Amount(req *pb.ListQuery) (int64, error) {
-	total := 0
-	err := repo.DB.Table("orders").Select("SUM(total_amount) AS amount").Where(req.Where).Scan(&total).Error
+func (repo *OrderRepository) Amount(req *pb.ListQuery) (total int64, err error) {
+	type AmountStruct struct {
+		Amount int64 `json:"amount"`
+	}
+	result := AmountStruct{}
+	err = repo.DB.Table("orders").Select("SUM(total_amount) AS amount").Where(req.Where).Scan(&result).Error
 	if err != nil {
 		log.Log(err)
-		return total, err
+		return result.Amount, err
 	}
-	return total, nil
+	return result.Amount, nil
 }
 
 // List 获取所有订单信息
