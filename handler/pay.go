@@ -23,9 +23,13 @@ type Pay struct {
 }
 
 // UserConfig 用户配置
-func (srv *Pay) UserConfig(userID string) (*configPB.Config, error) {
-	config := &configPB.Config{
-		Id: userID,
+func (srv *Pay) UserConfig(order *pd.Order) (*configPB.Config, error) {
+	config := &configPB.Config{}
+	if order.StoreId != "" {
+		config.Id = order.StoreId
+	}
+	if order.StoreId != "" {
+		config.StoreName = order.StoreName
 	}
 	err := srv.Config.Get(config)
 	return config, err
@@ -56,7 +60,7 @@ func (srv *Pay) HanderOrder(order *pd.Order) (err error) {
 
 // AopF2F 商家扫用户付款码
 func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
-	config, err := srv.UserConfig(req.Order.StoreId)
+	config, err := srv.UserConfig(req.Order)
 	if err != nil {
 		res.Valid = false
 		return fmt.Errorf("查询配置信息失败:%s", err)

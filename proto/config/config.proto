@@ -38,7 +38,7 @@ message Wechat {
 
 message Config {
     string id = 1;    // 商户ID userID;           // 商品及服务编码
-    string username = 2;    // 用户名称
+    string store_name = 2;    // 商户门店账号 (商家账号和商家id必须有一个)
     int64 alipay_id = 3;          // 支付宝ID
     int64 wechat_id = 4;          // 微信ID
     bool stauts = 5;        // 状态

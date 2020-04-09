@@ -8,16 +8,17 @@ service Pays {
 }
 
 message Order {
-    string store_id = 1;    // 商户门店编号 userId 收款账号ID
-    string method = 2;    // 付款方式 [支付宝、微信、银联等]
-    string auth_code = 3; // 付款码
-    string title = 4;   // 订单标题
-    int64 total_amount = 5; // 订单总金额
-    string order_no = 6;    // 订单编号
-    string operator_id = 7; // 商户操作员编号
-    string terminal_id = 8; // 商户机具终端编号
-    string created_at = 9;
-    string updated_at = 10;
+    string store_id = 1;    // 商户门店编号 userId (商家账号和商家id必须有一个)
+    string store_name = 2;    // 商户门店账号 (商家账号和商家id必须有一个)
+    string method = 3;    // 付款方式 [支付宝、微信、银联等]
+    string auth_code = 4; // 付款码
+    string title = 5;   // 订单标题
+    int64 total_amount = 6; // 订单总金额
+    string order_no = 7;    // 订单编号
+    string operator_id = 8; // 商户操作员编号
+    string terminal_id = 9; // 商户机具终端编号
+    string created_at = 10;
+    string updated_at = 11;
 }
 
 message Request {
