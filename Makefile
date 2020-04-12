@@ -7,7 +7,7 @@ tag:
 	git push --tags
 .PHONY: micro
 micro:
-	micro api --enable_rpc=true
+	micro api --handler=api
 .PHONY: proto
 proto:
 	protoc -I . --micro_out=. --gogofaster_out=. proto/pay/pay.proto
