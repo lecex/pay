@@ -28,7 +28,7 @@ message Order {
     string order_no = 7;    // 订单编号
     string operator_id = 8; // 商户操作员编号
     string terminal_id = 9; // 商户机具终端编号
-    bool stauts = 10;    // 订单状态
+    int64 stauts = 10;    // 订单状态
     string created_at = 11;
     string updated_at = 12;
 }

@@ -44,6 +44,8 @@ func alipay() {
 			app_id varchar(255) DEFAULT NULL COMMENT '应用ID',
 			private_key text DEFAULT NULL COMMENT '私钥',
 			ali_pay_public_key text DEFAULT NULL COMMENT '支付宝公钥',
+			app_auth_token varchar(255) DEFAULT NULL COMMENT '第三方应用授权',
+			sys_service_provider_id varchar(255) DEFAULT NULL COMMENT '服务商ID',
 			sign_type varchar(255) DEFAULT NULL COMMENT '签名方式',
 			sandbox int(11) DEFAULT 0 COMMENT '沙盒模式(禁用0、启用1)',
 			PRIMARY KEY (id)

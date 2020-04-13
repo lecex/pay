@@ -1,5 +1,7 @@
 package config
 
+import "github.com/lecex/core/env"
+
 // Config 配置
 type Config struct {
 	Service string
@@ -8,6 +10,6 @@ type Config struct {
 
 // Conf 配置
 var Conf Config = Config{
-	Service: "pay",
+	Service: env.Getenv("MICRO_API_NAMESPACE", "go.micro.srv") + "pay",
 	Version: "latest",
 }
