@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 
-	"github.com/lecex/core/env"
 	proto "github.com/lecex/pay/proto/pay"
 	"github.com/shopspring/decimal"
 
@@ -22,7 +21,7 @@ func (srv *Alipay) NewClient(config map[string]string, sandbox bool) {
 		AppId:        config["AppId"],
 		PrivateKey:   config["PrivateKey"],
 		SignType:     config["SignType"],
-		AppAuthToken: "202004BB360a6ab6cc114445be8dd9d589483E67",
+		AppAuthToken: config["AppAuthToken"],
 		// ReturnUrl:  config["ReturnUrl"],
 		// NotifyUrl:  config["NotifyUrl"],
 		IsProd: !sandbox,
@@ -39,10 +38,7 @@ func (srv *Alipay) AopF2F(order *proto.Order) (ok bool, err error) {
 	body.Set("out_trade_no", order.OrderNo)
 	body.Set("total_amount", decimal.NewFromFloat(float64(order.TotalAmount)).Div(decimal.NewFromFloat(float64(100))))
 	body.Set("timeout_express", "2m")
-	// body.Set("app_auth_token", "202004BB360a6ab6cc114445be8dd9d589483E67")
-	// body.Set("seller_id", "2088832151985671")
-
-	body.Set("extend_params", map[string]interface{}{"sys_service_provider_id": env.Getenv("ALIPAY_SERVICE_PID", "2088831013879013")})
+	body.Set("extend_params", map[string]interface{}{"sys_service_provider_id": srv.config["SysServiceProviderId"]})
 	fmt.Println(body)
 	aliRsp, err := srv.Client.TradePay(body)
 	if err != nil {

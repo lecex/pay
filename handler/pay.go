@@ -84,10 +84,12 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 	switch req.Order.Method {
 	case "alipay":
 		srv.Alipay.NewClient(map[string]string{
-			"AppId":           config.Alipay.AppId,
-			"PrivateKey":      config.Alipay.PrivateKey,
-			"AliPayPublicKey": config.Alipay.AliPayPublicKey,
-			"SignType":        config.Alipay.SignType,
+			"AppId":                config.Alipay.AppId,
+			"PrivateKey":           config.Alipay.PrivateKey,
+			"AliPayPublicKey":      config.Alipay.AliPayPublicKey,
+			"AppAuthToken":         config.Alipay.AppAuthToken,
+			"SysServiceProviderId": config.Alipay.SysServiceProviderId,
+			"SignType":             config.Alipay.SignType,
 		}, config.Alipay.Sandbox)
 		res.Valid, err = srv.Alipay.AopF2F(req.Order)
 		if err != nil {
