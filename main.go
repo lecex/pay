@@ -14,7 +14,7 @@ import (
 func main() {
 	var Conf = config.Conf
 	service := micro.NewService(
-		micro.Name(Conf.Service),
+		micro.Name(Conf.Name),
 		micro.Version(Conf.Version),
 	)
 	service.Init()

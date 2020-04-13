@@ -92,6 +92,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			"SignType":             config.Alipay.SignType,
 		}, config.Alipay.Sandbox)
 		res.Valid, err = srv.Alipay.AopF2F(req.Order)
+		fmt.Println(err)
 		if err != nil {
 			res.Valid = false
 			return err
