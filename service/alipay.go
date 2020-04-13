@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/lecex/core/env"
 	proto "github.com/lecex/pay/proto/pay"
 	"github.com/shopspring/decimal"
@@ -38,7 +40,7 @@ func (srv *Alipay) AopF2F(order *proto.Order) (ok bool, err error) {
 	body.Set("timeout_express", "2m")
 	body.Set("app_auth_token", "202004BB360a6ab6cc114445be8dd9d589483E67")
 	body.Set("extend_params", map[string]interface{}{"sys_service_provider_id": env.Getenv("ALIPAY_SERVICE_PID", "2088831013879013")})
-
+	fmt.Println(body)
 	aliRsp, err := srv.Client.TradePay(body)
 	if err != nil {
 		return ok, err

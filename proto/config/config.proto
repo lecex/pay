@@ -23,7 +23,9 @@ message Alipay {
     string private_key = 3;
     string ali_pay_public_key = 4;
     string sign_type = 5;
-    bool sandbox = 6;
+    string app_auth_token = 6; // 第三方应用授权 token
+    string sys_service_provider_id = 7;
+    bool sandbox = 7;
 }
 
 message Wechat {
