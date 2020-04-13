@@ -39,6 +39,8 @@ func (srv *Alipay) AopF2F(order *proto.Order) (ok bool, err error) {
 	body.Set("total_amount", decimal.NewFromFloat(float64(order.TotalAmount)).Div(decimal.NewFromFloat(float64(100))))
 	body.Set("timeout_express", "2m")
 	body.Set("app_auth_token", "202004BB360a6ab6cc114445be8dd9d589483E67")
+	body.Set("seller_id", "2088832151985671")
+
 	body.Set("extend_params", map[string]interface{}{"sys_service_provider_id": env.Getenv("ALIPAY_SERVICE_PID", "2088831013879013")})
 	fmt.Println(body)
 	aliRsp, err := srv.Client.TradePay(body)
