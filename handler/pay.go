@@ -15,11 +15,11 @@ import (
 
 // Pay 支付结构
 type Pay struct {
-	Config  repository.Config
-	Order   repository.Order
-	Alipay  *service.Alipay
-	Wechat  *service.Wechat
-	OrderDB *orderPB.Order
+	Config repository.Config
+	Repo   repository.Order
+	Alipay *service.Alipay
+	Wechat *service.Wechat
+	Order  *orderPB.Order
 }
 
 // UserConfig 用户配置
@@ -37,7 +37,7 @@ func (srv *Pay) UserConfig(order *pd.Order) (*configPB.Config, error) {
 
 // HanderOrder 处理订单
 func (srv *Pay) HanderOrder(order *pd.Order) (err error) {
-	srv.OrderDB = &orderPB.Order{
+	srv.Order = &orderPB.Order{
 		StoreId:     order.StoreId,     // 商户门店编号 收款账号ID userID
 		Method:      order.Method,      // 付款方式 [支付宝、微信、银联等]
 		AuthCode:    order.AuthCode,    // 付款码
@@ -48,12 +48,12 @@ func (srv *Pay) HanderOrder(order *pd.Order) (err error) {
 		TerminalId:  order.TerminalId,  // 商户机具终端编号
 		Stauts:      0,                 // 订单状态 默认状态未付款
 	}
-	err = srv.Order.StoreIdAndOrderNoGet(srv.OrderDB)
-	if srv.OrderDB.StoreId != order.StoreId || srv.OrderDB.OrderNo != order.OrderNo || srv.OrderDB.Method != order.Method || srv.OrderDB.AuthCode != order.AuthCode || srv.OrderDB.TotalAmount != order.TotalAmount {
+	err = srv.Repo.StoreIdAndOrderNoGet(srv.Order)
+	if srv.Order.StoreId != order.StoreId || srv.Order.OrderNo != order.OrderNo || srv.Order.Method != order.Method || srv.Order.AuthCode != order.AuthCode || srv.Order.TotalAmount != order.TotalAmount {
 		return errors.New("上报订单已存在,但数据校验失败")
 	}
 	if err == gorm.ErrRecordNotFound {
-		err = srv.Order.Create(srv.OrderDB)
+		err = srv.Repo.Create(srv.Order)
 	}
 	return err
 }
@@ -73,11 +73,11 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		res.Valid = false
 		return fmt.Errorf("创建订单失败:%s", err)
 	}
-	if srv.OrderDB.Stauts == 1 {
+	if srv.Order.Stauts == 1 {
 		res.Valid = true
 		return err // 支付成功返回
 	}
-	if srv.OrderDB.Stauts == -1 {
+	if srv.Order.Stauts == -1 {
 		res.Valid = false
 		return fmt.Errorf("订单已关闭")
 	}
@@ -98,9 +98,9 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			return err
 		}
 		if res.Valid {
-			srv.OrderDB.Stauts = 1
+			srv.Order.Stauts = 1
 		}
-		err = srv.Order.Update(srv.OrderDB)
+		err = srv.Repo.Update(srv.Order)
 		if err != nil {
 			res.Valid = false
 			return fmt.Errorf("订单状态更新失败:%s", err)
@@ -120,9 +120,9 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			return err
 		}
 		if res.Valid {
-			srv.OrderDB.Stauts = 1
+			srv.Order.Stauts = 1
 		}
-		err = srv.Order.Update(srv.OrderDB)
+		err = srv.Repo.Update(srv.Order)
 		if err != nil {
 			res.Valid = false
 			return fmt.Errorf("订单状态更新失败:%s", err)
