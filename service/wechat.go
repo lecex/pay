@@ -1,15 +1,16 @@
 package service
 
 import (
-	"encoding/xml"
-	"fmt"
+	"errors"
 	"strconv"
 
-	notifyPB "github.com/lecex/pay/proto/notify"
 	proto "github.com/lecex/pay/proto/pay"
 
-	"github.com/iGoogle-ink/gopay"
-	"github.com/iGoogle-ink/gopay/wechat"
+	"github.com/bigrocs/wechat"
+	"github.com/bigrocs/wechat/requests"
+	"github.com/bigrocs/wechat/util"
+
+	"github.com/clbanning/mxj"
 )
 
 type Wechat struct {
@@ -19,63 +20,70 @@ type Wechat struct {
 
 func (srv *Wechat) NewClient(config map[string]string, sandbox bool) {
 	srv.config = config
-	srv.Client = &wechat.Client{
-		AppId:  config["AppId"],
-		MchId:  config["MchId"],
-		ApiKey: config["ApiKey"],
-		// SubAppId: config["SubAppId"],
-		// SubMchId: config["SubMchId"],
-		IsProd: !sandbox,
-	}
+	srv.Client = wechat.NewClient()
+	c := srv.Client.Config
+	c.AppId = config["AppId"]
+	c.MchId = config["MchId"]
+	c.ApiKey = config["ApiKey"]
+	c.SubAppId = config["SubAppId"]
+	c.SubMchId = config["SubMchId"]
 }
 
 // AopF2F 商家扫用户付款码
 //    文档地址：https://pay.weixin.qq.com/wiki/doc/api/micropay_sl.php?chapter=9_10&index=1
 func (srv *Wechat) AopF2F(order *proto.Order) (ok bool, err error) {
-	body := make(gopay.BodyMap)
-	body.Set("sub_appid", srv.config["SubAppId"])
-	body.Set("sub_mch_id", srv.config["SubMchId"])
-	body.Set("nonce_str", gopay.GetRandomString(32))
-	body.Set("auth_code", order.AuthCode)
-	body.Set("body", order.Title)
-	body.Set("out_trade_no", order.OrderNo)
-	body.Set("total_fee", strconv.FormatInt(order.TotalAmount, 10))
-	body.Set("timeout_express", "2m")
-	body.Set("spbill_create_ip", "127.0.0.1")
-	wxRsp, err := srv.Client.Micropay(body)
+	// 配置参数
+	request := requests.NewCommonRequest()
+	request.Domain = "mch"
+	request.ApiName = "pay.micropay"
+	request.QueryParams = map[string]string{
+		"auth_code":        order.AuthCode,
+		"body":             order.Title,
+		"out_trade_no":     order.OrderNo,
+		"total_fee":        strconv.FormatInt(order.TotalAmount, 10),
+		"spbill_create_ip": "127.0.0.1",
+	}
+	// 请求
+	response, err := srv.Client.ProcessCommonRequest(request)
 	if err != nil {
 		return ok, err
 	}
-	return wechat.VerifySign(srv.config["ApiKey"], wechat.SignType_MD5, wxRsp)
+	req, err := response.GetHttpContentMap()
+	if err != nil {
+		return ok, err
+	}
+	if req["result_code"] == "SUCCESS" {
+		return true, err
+	}
+	return ok, errors.New(response.GetHttpContentJson())
 
 }
 
 // Notify 异步通知
-func (srv *Wechat) Notify(req *notifyPB.Request) (xml string, err error) {
-	// ====支付异步通知参数解析和验签Sign====
-	// 解析支付异步通知的参数
-	//    req：*http.Request
-	//    返回参数 notifyReq：通知的参数
-	//    返回参数 err：错误信息
-	notifyReq, err := srv.ParseNotifyResult(req.Body) // c.Request()是 echo 框架的获取 *http.Request 的写法
-	// 验签操作
-	ok, err := wechat.VerifySign(srv.config["ApiKey"], wechat.SignType_MD5, notifyReq)
-	if ok {
-		rsp := new(wechat.NotifyResponse) // 回复微信的数据
-		rsp.ReturnCode = gopay.SUCCESS
-		rsp.ReturnMsg = gopay.OK
-		xml = rsp.ToXmlString()
-	} else {
-		return xml, fmt.Errorf("Sign error: %s", err)
+func (srv *Wechat) Notify(body string) (ok bool, err error) {
+	notifyReq, err := srv.ParseNotifyResult(body)
+	if err != nil {
+		return ok, err
 	}
-	return xml, err
+	return util.VerifySign(notifyReq, srv.config["ApiKey"], util.SignType_MD5), err
 }
 
 // ParseNotifyResult 解析异步通知
-func (srv *Wechat) ParseNotifyResult(body string) (wxRsp *wechat.NotifyRequest, err error) {
-	wxRsp = new(wechat.NotifyRequest)
-	if err = xml.Unmarshal([]byte(body), wxRsp); err != nil {
-		return wxRsp, fmt.Errorf("xml.Unmarshal(%s)：%w", string(body), err)
+func (srv *Wechat) ParseNotifyResult(body string) (rsp map[string]string, err error) {
+	rsp = map[string]string{}
+	mv, err := mxj.NewMapXml([]byte(body))
+	for k, v := range mv["xml"].(map[string]interface{}) {
+		switch v.(type) {
+		case string:
+			rsp[k] = v.(string)
+			break
+		case int:
+			rsp[k] = strconv.Itoa(v.(int))
+			break
+		case float64:
+			rsp[k] = strconv.FormatFloat(v.(float64), 'E', -1, 32)
+			break
+		}
 	}
-	return wxRsp, err
+	return rsp, err
 }

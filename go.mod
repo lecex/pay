@@ -3,6 +3,8 @@ module github.com/lecex/pay
 go 1.13
 
 require (
+	github.com/bigrocs/wechat v1.0.2
+	github.com/clbanning/mxj v1.8.4
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.3.4
 	github.com/iGoogle-ink/gopay v1.5.4

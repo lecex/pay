@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/clbanning/mxj"
+
 	configPB "github.com/lecex/pay/proto/config"
 	pb "github.com/lecex/pay/proto/notify"
 	orderPB "github.com/lecex/pay/proto/order"
@@ -60,9 +62,7 @@ func (srv *Notify) Alipay(ctx context.Context, req *pb.Request, res *pb.Response
 			"SignType":             config.Alipay.SignType,
 		}, config.Alipay.Sandbox)
 		ok, err := srv.alipay.Notify(req)
-		if !ok && err != nil {
-			return err
-		} else {
+		if ok {
 			order.Stauts = 1
 			err = srv.Repo.Update(order)
 			if err != nil {
@@ -70,6 +70,8 @@ func (srv *Notify) Alipay(ctx context.Context, req *pb.Request, res *pb.Response
 			}
 			res.StatusCode = http.StatusOK
 			res.Body = string("success")
+		} else {
+			return fmt.Errorf("Verify Sign sgin error:  ", err)
 		}
 	} else {
 		return fmt.Errorf("Method: %s not alipay ", order.Method)
@@ -80,12 +82,15 @@ func (srv *Notify) Alipay(ctx context.Context, req *pb.Request, res *pb.Response
 
 // Wechat 异步通知
 func (srv *Notify) Wechat(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
+	if req.Body == "" {
+		return fmt.Errorf("Body Empty")
+	}
 	wxRsp, err := srv.wechat.ParseNotifyResult(req.Body)
 	if err != nil {
 		return err
 	}
 	order := &orderPB.Order{
-		OrderNo: wxRsp.OutTradeNo, // 订单编号
+		OrderNo: wxRsp["out_trade_no"], // 订单编号
 	}
 	if err = srv.Repo.Get(order); err != nil {
 		return err
@@ -105,17 +110,21 @@ func (srv *Notify) Wechat(ctx context.Context, req *pb.Request, res *pb.Response
 			"SubAppId": config.Wechat.SubAppId,
 			"SubMchId": config.Wechat.SubMchId,
 		}, config.Wechat.Sandbox)
-		xml, err := srv.wechat.Notify(req)
-		if err != nil {
-			return err
-		} else {
+		ok, err := srv.wechat.Notify(req.Body)
+		if ok {
 			order.Stauts = 1
 			err = srv.Repo.Update(order)
 			if err != nil {
 				return err
 			}
+			vm := mxj.Map{}
+			vm["return_code"] = "SUCCESS"
+			vm["return_msg"] = "OK"
+			body, _ := vm.Xml()
 			res.StatusCode = http.StatusOK
-			res.Body = xml
+			res.Body = string(body)
+		} else {
+			return fmt.Errorf("Verify Sign sgin error:  ", err)
 		}
 	} else {
 		return fmt.Errorf("Method: %s not wechat ", order.Method)
