@@ -29,7 +29,7 @@ func (srv *Pay) UserConfig(order *pd.Order) (*configPB.Config, error) {
 	if order.StoreId != "" {
 		config.Id = order.StoreId
 	}
-	if order.StoreId != "" {
+	if order.StoreName != "" {
 		config.StoreName = order.StoreName
 	}
 	err := srv.Config.Get(config)
