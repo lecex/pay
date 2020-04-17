@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -92,8 +93,8 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			"SignType":             config.Alipay.SignType,
 		}, config.Alipay.Sandbox)
 		res.Valid, err = srv.Alipay.AopF2F(req.Order)
-		fmt.Println(err)
 		if err != nil {
+			srv.alipayError(err)
 			res.Valid = false
 			return err
 		}
@@ -116,6 +117,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		}, config.Wechat.Sandbox)
 		res.Valid, err = srv.Wechat.AopF2F(req.Order)
 		if err != nil {
+			srv.wechatError(err)
 			res.Valid = false
 			return err
 		}
@@ -130,4 +132,32 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		return err
 	}
 	return err
+}
+
+// alipayError 支付宝错误
+func (srv *Pay) alipayError(err error) (e error) {
+	s := map[string]string{}
+	e = json.Unmarshal([]byte(err.Error()), &s)
+	if e != nil {
+		return e
+	}
+	if s["sub_code"] == "ACQ.TRADE_HAS_CLOSE" {
+		srv.Order.Stauts = -1
+		srv.Repo.Update(srv.Order)
+	}
+	return e
+}
+
+// wechatError 微信错误
+func (srv *Pay) wechatError(err error) (e error) {
+	s := map[string]string{}
+	e = json.Unmarshal([]byte(err.Error()), &s)
+	if e != nil {
+		return e
+	}
+	if s["err_code"] == "ORDERCLOSED" {
+		srv.Order.Stauts = -1
+		srv.Repo.Update(srv.Order)
+	}
+	return e
 }
