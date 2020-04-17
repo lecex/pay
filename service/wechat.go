@@ -42,7 +42,7 @@ func (srv *Wechat) AopF2F(order *proto.Order) (ok bool, err error) {
 	body.Set("total_fee", strconv.FormatInt(order.TotalAmount, 10))
 	body.Set("timeout_express", "2m")
 	body.Set("spbill_create_ip", "127.0.0.1")
-	wxRsp, err := srv.Client.UnifiedOrder(body)
+	wxRsp, err := srv.Client.Micropay(body)
 	if err != nil {
 		return ok, err
 	}
