@@ -36,7 +36,7 @@ func (srv *Pay) UserConfig(order *pd.Order) (*configPB.Config, error) {
 	if err != nil {
 		return config, err
 	}
-	order.StoreId = config.Id
+	order.StoreId = config.Id //修复商家用户名支付时无法获取商家id问题
 	return config, err
 }
 
