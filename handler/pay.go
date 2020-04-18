@@ -33,6 +33,10 @@ func (srv *Pay) UserConfig(order *pd.Order) (*configPB.Config, error) {
 		config.StoreName = order.StoreName
 	}
 	err := srv.Config.Get(config)
+	if err != nil {
+		return config, err
+	}
+	order.StoreId = config.Id
 	return config, err
 }
 
