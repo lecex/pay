@@ -101,7 +101,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			e := srv.alipayError(err)
 			if e == nil {
 				res.Valid = true
-				return e
+				return nil
 			}
 			res.Valid = false
 			return err
@@ -162,15 +162,16 @@ func (srv *Pay) alipayError(err error) error {
 }
 
 // wechatError 微信错误
-func (srv *Pay) wechatError(err error) (e error) {
+func (srv *Pay) wechatError(err error) error {
 	s := map[string]string{}
-	e = json.Unmarshal([]byte(err.Error()), &s)
+	e := json.Unmarshal([]byte(err.Error()), &s)
 	if e != nil {
-		return e
+		return err
 	}
-	if s["err_code"] == "ORDERCLOSED" { // 关闭订单
+	switch s["sub_code"] {
+	case "ORDERCLOSED":
 		srv.Order.Stauts = -1
 		srv.Repo.Update(srv.Order)
 	}
-	return e
+	return err
 }
