@@ -98,7 +98,11 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		}, config.Alipay.Sandbox)
 		res.Valid, err = srv.Alipay.AopF2F(req.Order)
 		if err != nil {
-			srv.alipayError(err)
+			e := srv.alipayError(err)
+			if e == nil {
+				res.Valid = true
+				return err
+			}
 			res.Valid = false
 			return err
 		}
@@ -145,8 +149,12 @@ func (srv *Pay) alipayError(err error) (e error) {
 	if e != nil {
 		return e
 	}
-	if s["sub_code"] == "ACQ.TRADE_HAS_CLOSE" {
+	if s["sub_code"] == "ACQ.TRADE_HAS_CLOSE" { // 关闭订单
 		srv.Order.Stauts = -1
+		srv.Repo.Update(srv.Order)
+	}
+	if s["sub_code"] == "ACQ.TRADE_HAS_SUCCESS" { // 已支付订单
+		srv.Order.Stauts = 1
 		srv.Repo.Update(srv.Order)
 	}
 	return e
@@ -159,7 +167,7 @@ func (srv *Pay) wechatError(err error) (e error) {
 	if e != nil {
 		return e
 	}
-	if s["err_code"] == "ORDERCLOSED" {
+	if s["err_code"] == "ORDERCLOSED" { // 关闭订单
 		srv.Order.Stauts = -1
 		srv.Repo.Update(srv.Order)
 	}
