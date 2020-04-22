@@ -101,7 +101,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			e := srv.alipayError(err)
 			if e == nil {
 				res.Valid = true
-				return err
+				return e
 			}
 			res.Valid = false
 			return err
@@ -143,21 +143,22 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 }
 
 // alipayError 支付宝错误
-func (srv *Pay) alipayError(err error) (e error) {
+func (srv *Pay) alipayError(err error) error {
 	s := map[string]string{}
-	e = json.Unmarshal([]byte(err.Error()), &s)
+	e := json.Unmarshal([]byte(err.Error()), &s)
 	if e != nil {
-		return e
+		return err
 	}
-	if s["sub_code"] == "ACQ.TRADE_HAS_CLOSE" { // 关闭订单
+	switch s["sub_code"] {
+	case "ACQ.TRADE_HAS_CLOSE":
 		srv.Order.Stauts = -1
 		srv.Repo.Update(srv.Order)
-	}
-	if s["sub_code"] == "ACQ.TRADE_HAS_SUCCESS" { // 已支付订单
+	case "ACQ.TRADE_HAS_SUCCESS": // 处理超时支付成功订单
 		srv.Order.Stauts = 1
 		srv.Repo.Update(srv.Order)
+		return nil
 	}
-	return e
+	return err
 }
 
 // wechatError 微信错误
