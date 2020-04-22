@@ -108,8 +108,8 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		}
 		if res.Valid {
 			srv.Order.Stauts = 1
+			err = srv.Repo.Update(srv.Order)
 		}
-		err = srv.Repo.Update(srv.Order)
 		if err != nil {
 			res.Valid = false
 			return fmt.Errorf("订单状态更新失败:%s", err)
@@ -131,8 +131,8 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		}
 		if res.Valid {
 			srv.Order.Stauts = 1
+			err = srv.Repo.Update(srv.Order)
 		}
-		err = srv.Repo.Update(srv.Order)
 		if err != nil {
 			res.Valid = false
 			return fmt.Errorf("订单状态更新失败:%s", err)
