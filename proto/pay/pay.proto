@@ -5,6 +5,7 @@ package pay;
 service Pays {
     // AopF2F 商家扫用户付款码
     rpc AopF2F(Request) returns (Response) {}
+    rpc Query(Request) returns (Response) {}
 }
 
 message Order {

@@ -29,14 +29,27 @@ func (srv *Wechat) NewClient(config map[string]string, sandbox bool) {
 	c.SubMchId = config["SubMchId"]
 }
 
+// Query 支付查询
+func (srv *Wechat) Query(order *proto.Order) (req mxj.Map, err error) {
+	// 配置参数
+	request := requests.NewCommonRequest()
+	request.Domain = "mch"
+	request.ApiName = "pay.orderquery"
+	request.QueryParams = map[string]interface{}{
+		"out_trade_no": order.OrderNo,
+	}
+	// 请求
+	return srv.request(request)
+}
+
 // AopF2F 商家扫用户付款码
 //    文档地址：https://pay.weixin.qq.com/wiki/doc/api/micropay_sl.php?chapter=9_10&index=1
-func (srv *Wechat) AopF2F(order *proto.Order) (ok bool, err error) {
+func (srv *Wechat) AopF2F(order *proto.Order) (req mxj.Map, err error) {
 	// 配置参数
 	request := requests.NewCommonRequest()
 	request.Domain = "mch"
 	request.ApiName = "pay.micropay"
-	request.QueryParams = map[string]string{
+	request.QueryParams = map[string]interface{}{
 		"auth_code":        order.AuthCode,
 		"body":             order.Title,
 		"out_trade_no":     order.OrderNo,
@@ -44,19 +57,25 @@ func (srv *Wechat) AopF2F(order *proto.Order) (ok bool, err error) {
 		"spbill_create_ip": "127.0.0.1",
 	}
 	// 请求
+	return srv.request(request)
+
+}
+func (srv *Wechat) request(request *requests.CommonRequest) (req mxj.Map, err error) {
+	// 请求
 	response, err := srv.Client.ProcessCommonRequest(request)
 	if err != nil {
-		return ok, err
+		return req, err
 	}
-	req, err := response.GetHttpContentMap()
+	req, err = response.GetHttpContentMap()
 	if err != nil {
-		return ok, err
+		return req, err
 	}
-	if req["result_code"] == "SUCCESS" {
-		return true, err
+	if req["return_code"] == "SUCCESS" {
+		if ok := util.VerifySign(req, srv.config["ApiKey"], util.SignType_MD5); !ok {
+			return req, errors.New("返回数据 Sign 校验失败")
+		}
 	}
-	return ok, errors.New(response.GetHttpContentJson())
-
+	return req, err
 }
 
 // Notify 异步通知
@@ -69,21 +88,7 @@ func (srv *Wechat) Notify(body string) (ok bool, err error) {
 }
 
 // ParseNotifyResult 解析异步通知
-func (srv *Wechat) ParseNotifyResult(body string) (rsp map[string]string, err error) {
-	rsp = map[string]string{}
+func (srv *Wechat) ParseNotifyResult(body string) (rsp map[string]interface{}, err error) {
 	mv, err := mxj.NewMapXml([]byte(body))
-	for k, v := range mv["xml"].(map[string]interface{}) {
-		switch v.(type) {
-		case string:
-			rsp[k] = v.(string)
-			break
-		case int:
-			rsp[k] = strconv.Itoa(v.(int))
-			break
-		case float64:
-			rsp[k] = strconv.FormatFloat(v.(float64), 'E', -1, 32)
-			break
-		}
-	}
-	return rsp, err
+	return mv["xml"].(map[string]interface{}), err
 }

@@ -90,7 +90,7 @@ func (srv *Notify) Wechat(ctx context.Context, req *pb.Request, res *pb.Response
 		return err
 	}
 	order := &orderPB.Order{
-		OrderNo: wxRsp["out_trade_no"], // 订单编号
+		OrderNo: wxRsp["out_trade_no"].(string), // 订单编号
 	}
 	if err = srv.Repo.Get(order); err != nil {
 		return err

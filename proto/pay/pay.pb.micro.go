@@ -36,6 +36,7 @@ var _ server.Option
 type PaysService interface {
 	// AopF2F 商家扫用户付款码
 	AopF2F(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error)
+	Query(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error)
 }
 
 type paysService struct {
@@ -60,16 +61,28 @@ func (c *paysService) AopF2F(ctx context.Context, in *Request, opts ...client.Ca
 	return out, nil
 }
 
+func (c *paysService) Query(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error) {
+	req := c.c.NewRequest(c.name, "Pays.Query", in)
+	out := new(Response)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Pays service
 
 type PaysHandler interface {
 	// AopF2F 商家扫用户付款码
 	AopF2F(context.Context, *Request, *Response) error
+	Query(context.Context, *Request, *Response) error
 }
 
 func RegisterPaysHandler(s server.Server, hdlr PaysHandler, opts ...server.HandlerOption) error {
 	type pays interface {
 		AopF2F(ctx context.Context, in *Request, out *Response) error
+		Query(ctx context.Context, in *Request, out *Response) error
 	}
 	type Pays struct {
 		pays
@@ -84,4 +97,8 @@ type paysHandler struct {
 
 func (h *paysHandler) AopF2F(ctx context.Context, in *Request, out *Response) error {
 	return h.PaysHandler.AopF2F(ctx, in, out)
+}
+
+func (h *paysHandler) Query(ctx context.Context, in *Request, out *Response) error {
+	return h.PaysHandler.Query(ctx, in, out)
 }
