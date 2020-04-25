@@ -63,7 +63,7 @@ func (repo *ConfigRepository) Exist(config *pb.Config) bool {
 
 // Get 获取配置信息
 func (repo *ConfigRepository) Get(config *pb.Config) error {
-	if err := repo.DB.Find(&config).Error; err != nil {
+	if err := repo.DB.Where(&config).Find(&config).Error; err != nil {
 		return err
 	}
 	// 查询关联
@@ -123,7 +123,6 @@ func (repo *ConfigRepository) Related(config *pb.Config) error {
 			return err
 		}
 	}
-
 	Wechat := &pb.Wechat{}
 	if err := repo.DB.Model(&config).Related(Wechat).Error; err != nil {
 		if err.Error() != "record not found" {

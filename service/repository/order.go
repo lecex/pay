@@ -75,7 +75,7 @@ func (repo *OrderRepository) Exist(order *pb.Order) bool {
 
 // Get 获取订单信息
 func (repo *OrderRepository) Get(order *pb.Order) error {
-	if err := repo.DB.Find(&order).Error; err != nil {
+	if err := repo.DB.Where(&order).Find(&order).Error; err != nil {
 		return err
 	}
 	return nil
