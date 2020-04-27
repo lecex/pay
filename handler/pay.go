@@ -27,13 +27,13 @@ type Pay struct {
 func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
 	config, err := srv.UserConfig(req.Order)
 	if err != nil {
-		log.Fatal("UserConfig")
+		log.Fatal("UserConfig.Query")
 		log.Fatal(err, req)
 		return fmt.Errorf("查询配置信息失败:%s", err)
 	}
 	err = srv.GetOrder(req.Order) //创建订单返回订单ID
 	if err != nil {
-		log.Fatal("GetOrder")
+		log.Fatal("GetOrder.Query")
 		log.Fatal(err, req)
 		return fmt.Errorf("查询订单失败:%s", err)
 	}
@@ -57,7 +57,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			srv.Order.Stauts = 1
 			err = srv.Repo.Update(srv.Order)
 			if err != nil {
-				log.Fatal("Alipay.Update.1")
+				log.Fatal("Alipay.Query.Update.1")
 				log.Fatal(err, req)
 				return fmt.Errorf("订单状态更新失败:%s", err)
 			}
@@ -66,14 +66,14 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		}
 		if data["trade_status"] == "TRADE_CLOSED" || data["trade_status"] == "TRADE_FINISHED" || data["sub_code"] == "ACQ.SYSTEM_ERROR" || data["sub_code"] == "ACQ.INVALID_PARAMETER" || data["sub_code"] == "ACQ.TRADE_NOT_EXIST" {
 			srv.Order.Stauts = -1
-			srv.Repo.Update(srv.Order)
+			err = srv.Repo.Update(srv.Order)
 			if err != nil {
-				log.Fatal("Alipay.Update.-1")
+				log.Fatal("Alipay.Query.Update.-1")
 				log.Fatal(err, req)
 			}
 		}
 		e, _ := data.Json() //无法正常返回时
-		log.Fatal("Alipay.data")
+		log.Fatal("Alipay.Query.data")
 		log.Fatal(e, req)
 		return fmt.Errorf(string(e))
 	case "wechat":
@@ -88,7 +88,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			srv.Order.Stauts = 1
 			err = srv.Repo.Update(srv.Order)
 			if err != nil {
-				log.Fatal("Wechat.Update.1")
+				log.Fatal("Wechat.Query.Update.1")
 				log.Fatal(err, req)
 				return fmt.Errorf("订单状态更新失败:%s", err)
 			}
@@ -97,14 +97,14 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		}
 		if data["trade_state"] == "REFUND" || data["trade_state"] == "CLOSED" || data["trade_state"] == "REVOKED" || data["trade_state"] == "PAYERROR" {
 			srv.Order.Stauts = -1
-			srv.Repo.Update(srv.Order)
+			err = srv.Repo.Update(srv.Order)
 			if err != nil {
-				log.Fatal("Wechat.Update.-1")
+				log.Fatal("Wechat.Query.Update.-1")
 				log.Fatal(err, req)
 			}
 		}
 		e, _ := data.Json() //无法正常返回时
-		log.Fatal("Wechat.data")
+		log.Fatal("Wechat.Query.data")
 		log.Fatal(e, req)
 		return fmt.Errorf(string(e))
 	}
@@ -115,7 +115,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
 	config, err := srv.UserConfig(req.Order)
 	if err != nil {
-		log.Fatal("UserConfig")
+		log.Fatal("UserConfig.AopF2F")
 		log.Fatal(err, req)
 		return fmt.Errorf("查询配置信息失败:%s", err)
 	}
@@ -124,7 +124,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 	}
 	err = srv.HanderOrder(req.Order) //创建订单返回订单ID
 	if err != nil {
-		log.Fatal("UserConfig")
+		log.Fatal("UserConfig.AopF2F")
 		log.Fatal(err, req)
 		return fmt.Errorf("创建订单失败:%s", err)
 	}
@@ -148,7 +148,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			srv.Order.Stauts = 1
 			err = srv.Repo.Update(srv.Order)
 			if err != nil {
-				log.Fatal("Alipay.Update.1")
+				log.Fatal("Alipay.AopF2F.Update.1")
 				log.Fatal(err, req)
 				return fmt.Errorf("订单状态更新失败:%s", err)
 			}
@@ -156,7 +156,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			return err
 		}
 		e, _ := data.Json() //无法正常返回时
-		log.Fatal("Alipay.data")
+		log.Fatal("Alipay.AopF2F.data")
 		log.Fatal(e, req)
 		return fmt.Errorf(string(e))
 	case "wechat":
@@ -171,7 +171,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			srv.Order.Stauts = 1
 			err = srv.Repo.Update(srv.Order)
 			if err != nil {
-				log.Fatal("Wechat.Update.1")
+				log.Fatal("Wechat.AopF2F.Update.1")
 				log.Fatal(err, req)
 				return fmt.Errorf("订单状态更新失败:%s", err)
 			}
@@ -179,7 +179,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			return err
 		}
 		e, _ := data.Json() //无法正常返回时
-		log.Fatal("Wechat.data")
+		log.Fatal("Wechat.AopF2F.data")
 		log.Fatal(e, req)
 		return fmt.Errorf(string(e))
 	}
