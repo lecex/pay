@@ -74,7 +74,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		}
 		e, _ := data.Json() //无法正常返回时
 		log.Fatal("Alipay.Query.data")
-		log.Fatal(e, req)
+		log.Fatal(string(e), req)
 		return fmt.Errorf(string(e))
 	case "wechat":
 		srv.newWechatClient(config) //实例化连微信接
@@ -105,7 +105,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		}
 		e, _ := data.Json() //无法正常返回时
 		log.Fatal("Wechat.Query.data")
-		log.Fatal(e, req)
+		log.Fatal(string(e), req)
 		return fmt.Errorf(string(e))
 	}
 	return err
@@ -157,7 +157,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		}
 		e, _ := data.Json() //无法正常返回时
 		log.Fatal("Alipay.AopF2F.data")
-		log.Fatal(e, req)
+		log.Fatal(string(e), req)
 		return fmt.Errorf(string(e))
 	case "wechat":
 		srv.newWechatClient(config) //实例化微信连接
@@ -180,7 +180,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		}
 		e, _ := data.Json() //无法正常返回时
 		log.Fatal("Wechat.AopF2F.data")
-		log.Fatal(e, req)
+		log.Fatal(string(e), req)
 		return fmt.Errorf(string(e))
 	}
 	return err
