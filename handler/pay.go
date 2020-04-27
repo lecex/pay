@@ -152,7 +152,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 				log.Fatal(err, req)
 				return fmt.Errorf("订单状态更新失败:%s", err)
 			}
-			res.Valid = false
+			res.Valid = true
 			return err
 		}
 		e, _ := data.Json() //无法正常返回时
@@ -175,7 +175,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 				log.Fatal(err, req)
 				return fmt.Errorf("订单状态更新失败:%s", err)
 			}
-			res.Valid = false
+			res.Valid = true
 			return err
 		}
 		e, _ := data.Json() //无法正常返回时
