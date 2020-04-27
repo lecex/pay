@@ -87,6 +87,8 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		if data["trade_state"] == "SUCCESS" {
 			srv.Order.Stauts = 1
 			err = srv.Repo.Update(srv.Order)
+			log.Fatal("Alipay.Query.Success")
+			log.Fatal(srv.Order, req)
 			if err != nil {
 				log.Fatal("Wechat.Query.Update.1")
 				log.Fatal(err, req)
@@ -147,6 +149,8 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		if data["code"].(string) == "10000" && data["msg"].(string) == "Success" {
 			srv.Order.Stauts = 1
 			err = srv.Repo.Update(srv.Order)
+			log.Fatal("Alipay.AopF2F.Success")
+			log.Fatal(srv.Order, req)
 			if err != nil {
 				log.Fatal("Alipay.AopF2F.Update.1")
 				log.Fatal(err, req)
