@@ -1,7 +1,6 @@
 package service
 
 import (
-	"errors"
 	"strconv"
 
 	proto "github.com/lecex/pay/proto/pay"
@@ -71,8 +70,9 @@ func (srv *Wechat) request(request *requests.CommonRequest) (req mxj.Map, err er
 		return req, err
 	}
 	if req["return_code"] == "SUCCESS" {
-		if ok := util.VerifySign(req, srv.config["ApiKey"], util.SignType_MD5); !ok {
-			return req, errors.New("返回数据 Sign 校验失败")
+		ok := util.VerifySign(req, srv.config["ApiKey"], util.SignType_MD5)
+		if ok && err == nil {
+			return req, err
 		}
 	}
 	return req, err
@@ -80,11 +80,12 @@ func (srv *Wechat) request(request *requests.CommonRequest) (req mxj.Map, err er
 
 // Notify 异步通知
 func (srv *Wechat) Notify(body string) (ok bool, err error) {
-	notifyReq, err := srv.ParseNotifyResult(body)
-	if err != nil {
-		return ok, err
-	}
-	return util.VerifySign(notifyReq, srv.config["ApiKey"], util.SignType_MD5), err
+	// notifyReq, err := srv.ParseNotifyResult(body)
+	// if err != nil {
+	// 	return ok, err
+	// }
+	// return util.VerifySign(notifyReq, srv.config["ApiKey"], util.SignType_MD5), err
+	return
 }
 
 // ParseNotifyResult 解析异步通知

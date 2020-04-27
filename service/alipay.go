@@ -1,8 +1,6 @@
 package service
 
 import (
-	"errors"
-
 	"github.com/clbanning/mxj"
 	notifyPB "github.com/lecex/pay/proto/notify"
 	proto "github.com/lecex/pay/proto/pay"
@@ -69,13 +67,11 @@ func (srv *Alipay) request(request *requests.CommonRequest) (req mxj.Map, err er
 		return req, err
 	}
 	req, err = response.GetHttpContentMap()
-	if ok, err := util.VerifySign(response.GetSignData(), req["sign"].(string), srv.config["AliPayPublicKey"], srv.config["SignType"]); !ok {
-		if err != nil {
-			return req, err
-		}
-		return req, errors.New("返回数据 Sign 校验失败")
+	ok, err := util.VerifySign(response.GetSignData(), req["sign"].(string), srv.config["AliPayPublicKey"], srv.config["SignType"])
+	if ok && err == nil {
+		return response.GetSignDataMap()
 	}
-	return response.GetSignDataMap()
+	return req, err
 }
 
 // Notify 异步通知
