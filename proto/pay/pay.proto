@@ -26,6 +26,14 @@ message Request {
     Order order = 1;                      // 请求支付订单
 }
 
+
 message Response {
     bool valid = 1;
+    string content = 2;
+    Error error = 3;
+}
+
+message Error {
+    string code    = 1;
+	string detail  = 2;
 }

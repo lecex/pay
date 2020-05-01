@@ -25,7 +25,8 @@ message Alipay {
     string sign_type = 5;
     string app_auth_token = 6; // 第三方应用授权 token
     string sys_service_provider_id = 7; //服务商ID
-    bool sandbox = 8;
+    int64 fee = 8;// 手续费比率 万分率
+    bool sandbox = 9;
 }
 
 message Wechat {
@@ -35,7 +36,8 @@ message Wechat {
     string api_key = 4;
     string sub_app_id = 5;
     string sub_mch_id = 6;
-    bool sandbox = 7;
+    int64 fee = 7;// 手续费比率 万分率
+    bool sandbox = 8;
 }
 
 message Config {

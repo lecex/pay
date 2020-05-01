@@ -47,6 +47,7 @@ func alipay() {
 			app_auth_token varchar(255) DEFAULT NULL COMMENT '第三方应用授权',
 			sys_service_provider_id varchar(255) DEFAULT NULL COMMENT '服务商ID',
 			sign_type varchar(255) DEFAULT NULL COMMENT '签名方式',
+			fee int(11) DEFAULT 0 COMMENT '手续费单位万分之一',
 			sandbox int(11) DEFAULT 0 COMMENT '沙盒模式(禁用0、启用1)',
 			PRIMARY KEY (id)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -66,6 +67,7 @@ func wechat() {
 			api_key varchar(255) DEFAULT NULL COMMENT 'API秘钥',
 			sub_app_id varchar(255) DEFAULT NULL COMMENT '子应用ID',
 			sub_mch_id varchar(255) DEFAULT NULL COMMENT '子商家ID',
+			fee int(11) DEFAULT 0 COMMENT '手续费单位万分之一',
 			sandbox int(11) DEFAULT 0 COMMENT '沙盒模式(禁用0、启用1)',
 			PRIMARY KEY (id)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -85,6 +87,7 @@ func order() {
 			auth_code varchar(36) DEFAULT NULL COMMENT '付款码',
 			title varchar(128) DEFAULT NULL COMMENT '订单标题',
 			total_amount int(16) DEFAULT NULL COMMENT '订单总金额',
+			fee int(11) DEFAULT 0 COMMENT '手续费',
 			order_no varchar(36) DEFAULT NULL COMMENT '商家订单编号',
 			operator_id varchar(16) DEFAULT NULL COMMENT '商户操作员编号',
 			terminal_id varchar(16) DEFAULT NULL COMMENT '商户机具终端编号',

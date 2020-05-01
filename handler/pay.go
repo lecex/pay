@@ -3,7 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
-	"fmt"
+	"math"
 
 	"github.com/jinzhu/gorm"
 	configPB "github.com/lecex/pay/proto/config"
@@ -25,17 +25,20 @@ type Pay struct {
 
 // Query 支付查询
 func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
+	res.Error = &pd.Error{}
 	config, err := srv.UserConfig(req.Order)
 	if err != nil {
-		log.Fatal("UserConfig.Query")
-		log.Fatal(err, req)
-		return fmt.Errorf("查询配置信息失败:%s", err)
+		res.Error.Code = "Query.UserConfig"
+		res.Error.Detail = "查询配置信息失败"
+		log.Fatal(req, res, err)
+		return nil
 	}
 	err = srv.GetOrder(req.Order) //创建订单返回订单ID
 	if err != nil {
-		log.Fatal("GetOrder.Query")
-		log.Fatal(err, req)
-		return fmt.Errorf("查询订单失败:%s", err)
+		res.Error.Code = "Query.GetOrder"
+		res.Error.Detail = "获取订单失败"
+		log.Fatal(req, res, err)
+		return nil
 	}
 	// if srv.Order.Stauts == 1 {
 	// 	res.Valid = true
@@ -47,88 +50,103 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 	switch srv.Order.Method {
 	case "alipay":
 		srv.newAlipayClient(config) //实例化支付宝连接
-		data, err := srv.Alipay.Query(req.Order)
+		content, err := srv.Alipay.Query(req.Order)
 		if err != nil {
-			log.Fatal("Alipay.Query")
-			log.Fatal(err, req)
-			return err
+			res.Error.Code = "Query.Alipay"
+			res.Error.Detail = "查询支付宝订单失败"
+			log.Fatal(req, res, err)
+			return nil
 		}
-		if data["code"].(string) == "10000" && data["msg"].(string) == "Success" && data["trade_status"] == "TRADE_SUCCESS" {
-			srv.Order.Stauts = 1
-			err = srv.Repo.Update(srv.Order)
-			if err != nil {
-				log.Fatal("Alipay.Query.Update.1")
-				log.Fatal(err, req)
-				return fmt.Errorf("订单状态更新失败:%s", err)
-			}
+		c, err := content.Json()
+		if err != nil {
+			res.Error.Code = "Query.Alipay.Mxj"
+			res.Error.Detail = "支付宝返回数据解析失败"
+			log.Fatal(req, res, err)
+			return nil
+		}
+		res.Content = string(c) //数据正常返回
+		if content["code"].(string) == "10000" && content["msg"].(string) == "Success" && content["trade_status"] == "TRADE_SUCCESS" {
 			res.Valid = true
-			return err
+			err = srv.successOrder(config.Alipay.Fee)
+			if err != nil {
+				res.Error.Code = "Query.Alipay.Update.Success"
+				res.Error.Detail = "支付成功,更新订单状态失败!"
+				log.Fatal(req, res, err)
+			}
+			return nil
 		}
-		if data["trade_status"] == "TRADE_CLOSED" || data["trade_status"] == "TRADE_FINISHED" || data["sub_code"] == "ACQ.SYSTEM_ERROR" || data["sub_code"] == "ACQ.INVALID_PARAMETER" || data["sub_code"] == "ACQ.TRADE_NOT_EXIST" {
+		if content["trade_status"] == "TRADE_CLOSED" || content["trade_status"] == "TRADE_FINISHED" {
 			srv.Order.Stauts = -1
 			err = srv.Repo.Update(srv.Order)
 			if err != nil {
-				log.Fatal("Alipay.Query.Update.-1")
-				log.Fatal(err, req)
+				res.Error.Code = "Query.Alipay.Update.Close"
+				res.Error.Detail = "支付成功,更新订单状态失败!"
+				log.Fatal(req, res, err)
 			}
 		}
-		e, _ := data.Json() //无法正常返回时
-		log.Fatal("Alipay.Query.data")
-		log.Fatal(string(e), req)
-		return fmt.Errorf(string(e))
+		return nil
 	case "wechat":
 		srv.newWechatClient(config) //实例化连微信接
-		data, err := srv.Wechat.Query(req.Order)
+		content, err := srv.Wechat.Query(req.Order)
 		if err != nil {
-			log.Fatal("Wechat.Query")
-			log.Fatal(err, req)
-			return err
+			res.Error.Code = "Query.Wechat"
+			res.Error.Detail = "查询微信订单失败"
+			log.Fatal(req, res, err)
+			return nil
 		}
-		if data["trade_state"] == "SUCCESS" {
-			srv.Order.Stauts = 1
-			err = srv.Repo.Update(srv.Order)
-			log.Fatal("Alipay.Query.Success")
-			log.Fatal(srv.Order, req)
-			if err != nil {
-				log.Fatal("Wechat.Query.Update.1")
-				log.Fatal(err, req)
-				return fmt.Errorf("订单状态更新失败:%s", err)
-			}
+		c, err := content.Json()
+		if err != nil {
+			res.Error.Code = "Query.Wechat.Mxj"
+			res.Error.Detail = "微信返回数据解析失败"
+			log.Fatal(req, res, err)
+			return nil
+		}
+		res.Content = string(c) //数据正常返回
+		if content["trade_state"] == "SUCCESS" {
 			res.Valid = true
-			return err
+			err = srv.successOrder(config.Wechat.Fee)
+			if err != nil {
+				res.Error.Code = "Query.Wechat.Update.Success"
+				res.Error.Detail = "支付成功,更新订单状态失败!"
+				log.Fatal(req, res, err)
+			}
+			return nil
 		}
-		if data["trade_state"] == "REFUND" || data["trade_state"] == "CLOSED" || data["trade_state"] == "REVOKED" || data["trade_state"] == "PAYERROR" {
+		if content["trade_state"] == "CLOSED" || content["trade_state"] == "REVOKED" || content["trade_state"] == "PAYERROR" {
 			srv.Order.Stauts = -1
 			err = srv.Repo.Update(srv.Order)
 			if err != nil {
-				log.Fatal("Wechat.Query.Update.-1")
-				log.Fatal(err, req)
+				res.Error.Code = "Query.Alipay.Update.Close"
+				res.Error.Detail = "支付成功,更新订单状态失败!"
+				log.Fatal(req, res, err)
 			}
 		}
-		e, _ := data.Json() //无法正常返回时
-		log.Fatal("Wechat.Query.data")
-		log.Fatal(string(e), req)
-		return fmt.Errorf(string(e))
+		return nil
 	}
-	return err
+	return nil
 }
 
 // AopF2F 商家扫用户付款码
 func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
+	res.Error = &pd.Error{}
 	config, err := srv.UserConfig(req.Order)
 	if err != nil {
-		log.Fatal("UserConfig.AopF2F")
-		log.Fatal(err, req)
-		return fmt.Errorf("查询配置信息失败:%s", err)
+		res.Error.Code = "AopF2F.UserConfig"
+		res.Error.Detail = "查询配置信息失败"
+		log.Fatal(req, res, err)
+		return nil
 	}
 	if !config.Stauts {
-		return fmt.Errorf("支付功能被禁用！请联系管理员。")
+		res.Error.Code = "AopF2F.Stauts"
+		res.Error.Detail = "支付功能被禁用！请联系管理员。"
+		return nil
 	}
 	err = srv.HanderOrder(req.Order) //创建订单返回订单ID
 	if err != nil {
-		log.Fatal("UserConfig.AopF2F")
-		log.Fatal(err, req)
-		return fmt.Errorf("创建订单失败:%s", err)
+		res.Error.Code = "AopF2F.HanderOrder"
+		res.Error.Detail = "创建订单失败"
+		log.Fatal(req, res, err)
+		return nil
 	}
 	// if srv.Order.Stauts == 1 {
 	// 	res.Valid = true
@@ -140,54 +158,62 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 	switch req.Order.Method {
 	case "alipay":
 		srv.newAlipayClient(config) //实例化连支付宝接
-		data, err := srv.Alipay.AopF2F(req.Order)
+		content, err := srv.Alipay.AopF2F(req.Order)
 		if err != nil {
-			log.Fatal("Alipay.AopF2F")
-			log.Fatal(err, req)
-			return err
+			res.Error.Code = "AopF2F.Alipay"
+			res.Error.Detail = "支付宝下单失败"
+			log.Fatal(req, res, err)
+			return nil
 		}
-		if data["code"].(string) == "10000" && data["msg"].(string) == "Success" {
-			srv.Order.Stauts = 1
-			err = srv.Repo.Update(srv.Order)
-			log.Fatal("Alipay.AopF2F.Success")
-			log.Fatal(srv.Order, req)
-			if err != nil {
-				log.Fatal("Alipay.AopF2F.Update.1")
-				log.Fatal(err, req)
-				return fmt.Errorf("订单状态更新失败:%s", err)
-			}
+		c, err := content.Json()
+		if err != nil {
+			res.Error.Code = "AopF2F.Alipay.Mxj"
+			res.Error.Detail = "支付宝下单返回数据解析失败"
+			log.Fatal(req, res, err)
+			return nil
+		}
+		res.Content = string(c) //数据正常返回
+		if content["code"].(string) == "10000" && content["msg"].(string) == "Success" {
 			res.Valid = true
-			return err
+			err = srv.successOrder(config.Alipay.Fee)
+			if err != nil {
+				res.Error.Code = "Query.Alipay.Update.Success"
+				res.Error.Detail = "支付成功,更新订单状态失败!"
+				log.Fatal(req, res, err)
+			}
+			return nil
 		}
-		e, _ := data.Json() //无法正常返回时
-		log.Fatal("Alipay.AopF2F.data")
-		log.Fatal(string(e), req)
-		return fmt.Errorf(string(e))
+		return nil
 	case "wechat":
 		srv.newWechatClient(config) //实例化微信连接
-		data, err := srv.Wechat.AopF2F(req.Order)
+		content, err := srv.Wechat.AopF2F(req.Order)
 		if err != nil {
-			log.Fatal("Wechat.AopF2F")
-			log.Fatal(err, req)
-			return err
+			res.Error.Code = "AopF2F.Wechat"
+			res.Error.Detail = "微信下单失败"
+			log.Fatal(req, res, err)
+			return nil
 		}
-		if data["result_code"] == "SUCCESS" {
-			srv.Order.Stauts = 1
-			err = srv.Repo.Update(srv.Order)
-			if err != nil {
-				log.Fatal("Wechat.AopF2F.Update.1")
-				log.Fatal(err, req)
-				return fmt.Errorf("订单状态更新失败:%s", err)
-			}
+		c, err := content.Json()
+		if err != nil {
+			res.Error.Code = "AopF2F.Wechat.Mxj"
+			res.Error.Detail = "微信下单返回数据解析失败"
+			log.Fatal(req, res, err)
+			return nil
+		}
+		res.Content = string(c) //数据正常返回
+		if content["result_code"] == "SUCCESS" {
 			res.Valid = true
-			return err
+			err = srv.successOrder(config.Wechat.Fee)
+			if err != nil {
+				res.Error.Code = "AopF2F.Wechat.Update.Success"
+				res.Error.Detail = "支付成功,更新订单状态失败!"
+				log.Fatal(req, res, err)
+			}
+			return nil
 		}
-		e, _ := data.Json() //无法正常返回时
-		log.Fatal("Wechat.AopF2F.data")
-		log.Fatal(string(e), req)
-		return fmt.Errorf(string(e))
+		return nil
 	}
-	return err
+	return nil
 }
 
 // UserConfig 用户配置
@@ -231,12 +257,15 @@ func (srv *Pay) HanderOrder(order *pd.Order) (err error) {
 	}
 	err = srv.Repo.StoreIdAndOrderNoGet(srv.Order)
 	if err == gorm.ErrRecordNotFound {
-		log.Fatal("StoreIdAndOrderNoGet")
-		log.Fatal(err, order)
 		err = srv.Repo.Create(srv.Order)
+		if err != nil {
+			log.Fatal("Order.Create")
+			log.Fatal(err, order)
+			return err
+		}
 	}
 	if srv.Order.StoreId != order.StoreId || srv.Order.OrderNo != order.OrderNo || srv.Order.Method != order.Method || srv.Order.AuthCode != order.AuthCode || srv.Order.TotalAmount != order.TotalAmount {
-		log.Fatal("StoreIdAndOrderNoGet=")
+		log.Fatal("OrderVsOrder")
 		log.Fatal(srv.Order, order)
 		return errors.New("上报订单已存在,但数据校验失败")
 	}
@@ -264,4 +293,15 @@ func (srv *Pay) newWechatClient(c *configPB.Config) {
 		"SubAppId": c.Wechat.SubAppId,
 		"SubMchId": c.Wechat.SubMchId,
 	}, c.Wechat.Sandbox)
+}
+
+// 支付成功订单处理
+func (srv *Pay) successOrder(fee int64) (err error) {
+	srv.Order.Stauts = 1
+	srv.Order.Fee = int64(math.Floor(float64(srv.Order.TotalAmount*fee)/10000 + 0.5)) // 相乘后转浮点型乘以万分之一然后四舍五入 【+0.5四舍五入取整】
+	err = srv.Repo.Update(srv.Order)
+	if err != nil {
+		return err
+	}
+	return err
 }

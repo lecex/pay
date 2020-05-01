@@ -67,6 +67,12 @@ func (srv *Alipay) request(request *requests.CommonRequest) (req mxj.Map, err er
 		return req, err
 	}
 	req, err = response.GetHttpContentMap()
+	if err != nil {
+		return req, err
+	}
+	if req["sign"] == nil {
+		return response.GetSignDataMap()
+	}
 	ok, err := util.VerifySign(response.GetSignData(), req["sign"].(string), srv.config["AliPayPublicKey"], srv.config["SignType"])
 	if ok && err == nil {
 		return response.GetSignDataMap()
