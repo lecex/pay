@@ -73,6 +73,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 				res.Error.Detail = "支付成功,更新订单状态失败!"
 				log.Fatal(req, res, err)
 			}
+			log.Fatal("Query.Alipay", req, res, err)
 			return nil
 		}
 		if content["trade_status"] == "TRADE_CLOSED" || content["trade_status"] == "TRADE_FINISHED" {
@@ -110,6 +111,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 				res.Error.Detail = "支付成功,更新订单状态失败!"
 				log.Fatal(req, res, err)
 			}
+			log.Fatal("Query.Wechat", req, res, err)
 			return nil
 		}
 		if content["trade_state"] == "CLOSED" || content["trade_state"] == "REVOKED" || content["trade_state"] == "PAYERROR" {
@@ -177,10 +179,11 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			res.Valid = true
 			err = srv.successOrder(config.Alipay.Fee)
 			if err != nil {
-				res.Error.Code = "Query.Alipay.Update.Success"
+				res.Error.Code = "AopF2F.Alipay.Update.Success"
 				res.Error.Detail = "支付成功,更新订单状态失败!"
 				log.Fatal(req, res, err)
 			}
+			log.Fatal("AopF2F.Alipay", req, res, err)
 			return nil
 		}
 		return nil
@@ -209,6 +212,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 				res.Error.Detail = "支付成功,更新订单状态失败!"
 				log.Fatal(req, res, err)
 			}
+			log.Fatal("AopF2F.Wechat", req, res, err)
 			return nil
 		}
 		return nil
