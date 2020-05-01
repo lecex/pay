@@ -13,6 +13,7 @@ import (
 //Order 仓库接口
 type Order interface {
 	Amount(req *pb.ListQuery) (int64, error)
+	Fee(req *pb.ListQuery) (int64, error)
 	List(req *pb.ListQuery) ([]*pb.Order, error)
 	Total(req *pb.ListQuery) (int64, error)
 	Create(order *pb.Order) error
@@ -40,6 +41,20 @@ func (repo *OrderRepository) Amount(req *pb.ListQuery) (total int64, err error) 
 		return result.Amount, err
 	}
 	return result.Amount, nil
+}
+
+// Fee 获取所有订单手续费
+func (repo *OrderRepository) Fee(req *pb.ListQuery) (total int64, err error) {
+	type FeeStruct struct {
+		Fee int64 `json:"fee"`
+	}
+	result := FeeStruct{}
+	err = repo.DB.Table("orders").Select("SUM(fee) AS fee").Where(req.Where).Scan(&result).Error
+	if err != nil {
+		log.Log(err)
+		return result.Fee, err
+	}
+	return result.Fee, nil
 }
 
 // List 获取所有订单信息

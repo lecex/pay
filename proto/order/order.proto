@@ -5,6 +5,8 @@ package order;
 service Orders {
     // 查询总和
     rpc Amount(Request) returns (Response) {}
+    // 查询手续费总和
+    rpc Fee(Request) returns (Response) {}
     // 获取订单列表
     rpc List(Request) returns (Response) {}
     // 根据 唯一 获取订单

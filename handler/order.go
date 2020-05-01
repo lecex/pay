@@ -23,6 +23,16 @@ func (srv *Order) Amount(ctx context.Context, req *pb.Request, res *pb.Response)
 	return err
 }
 
+// Fee 查询总和
+func (srv *Order) Fee(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
+	amount, err := srv.Repo.Fee(req.ListQuery)
+	if err != nil {
+		return err
+	}
+	res.Total = amount
+	return err
+}
+
 // List 获取所有订单
 func (srv *Order) List(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
 	orders, err := srv.Repo.List(req.ListQuery)
