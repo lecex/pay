@@ -114,11 +114,11 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			}
 			return nil
 		}
-		if content["trade_state"] == "CLOSED" || content["trade_state"] == "REVOKED" || content["trade_state"] == "PAYERROR" {
+		if content["trade_state"] == "CLOSED" || content["trade_state"] == "REVOKED" || content["trade_state"] == "PAYERROR" || content["err_code"] == "ORDERNOTEXIST" {
 			srv.Order.Stauts = -1
 			err = srv.Repo.Update(srv.Order)
 			if err != nil {
-				res.Error.Code = "Query.Alipay.Update.Close"
+				res.Error.Code = "Query.Wechat.Update.Close"
 				res.Error.Detail = "支付成功,更新订单状态失败!"
 				log.Fatal(req, res, err)
 			}
