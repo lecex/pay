@@ -122,7 +122,7 @@ func (repo *OrderRepository) Update(order *pb.Order) error {
 	}
 	order.CreatedAt = ""
 	log.Fatal("OrderUpdate", order)
-	return repo.DB.Model(order).Save(order).Error
+	return repo.DB.Save(order).Error
 }
 
 // Delete 删除订单

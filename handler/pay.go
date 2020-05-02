@@ -177,12 +177,13 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		res.Content = string(c) //数据正常返回
 		log.Fatal("AopF2F.Alipay", req, res, err)
 		if content["code"].(string) == "10000" && content["msg"].(string) == "Success" {
+			log.Fatal("AopF2F.Alipay.Success", req, res, err)
 			res.Valid = true
 			err = srv.successOrder(config.Alipay.Fee)
 			if err != nil {
 				res.Error.Code = "AopF2F.Alipay.Update.Success"
 				res.Error.Detail = "支付成功,更新订单状态失败!"
-				log.Fatal(req, res, err)
+				log.Fatal("AopF2F.Alipay.successOrder", req, res, err)
 			}
 			return nil
 		}
@@ -206,12 +207,13 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		res.Content = string(c) //数据正常返回
 		log.Fatal("AopF2F.Wechat", req, res, err)
 		if content["result_code"] == "SUCCESS" {
+			log.Fatal("AopF2F.Wechat.Success", req, res, err)
 			res.Valid = true
 			err = srv.successOrder(config.Wechat.Fee)
 			if err != nil {
 				res.Error.Code = "AopF2F.Wechat.Update.Success"
 				res.Error.Detail = "支付成功,更新订单状态失败!"
-				log.Fatal(req, res, err)
+				log.Fatal("AopF2F.Wechat.successOrder", req, res, err)
 			}
 			return nil
 		}

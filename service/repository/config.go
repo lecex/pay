@@ -88,7 +88,7 @@ func (repo *ConfigRepository) Update(config *pb.Config) error {
 		return fmt.Errorf("请传入更新id")
 	}
 	config.CreatedAt = ""
-	return repo.DB.Model(config).Save(config).Error
+	return repo.DB.Save(config).Error
 }
 
 // Delete 删除配置
