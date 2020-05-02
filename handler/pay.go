@@ -76,7 +76,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			}
 			return nil
 		}
-		if content["trade_status"] == "TRADE_CLOSED" || content["trade_status"] == "TRADE_FINISHED" {
+		if content["trade_status"] == "TRADE_CLOSED" || content["trade_status"] == "TRADE_FINISHED" || content["sub_code"] == "ACQ.TRADE_NOT_EXIST" {
 			srv.Order.Stauts = -1
 			err = srv.Repo.Update(srv.Order)
 			if err != nil {
