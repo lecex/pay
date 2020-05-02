@@ -65,6 +65,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			return nil
 		}
 		res.Content = string(c) //数据正常返回
+		log.Fatal("Query.Alipay", req, res, err)
 		if content["code"].(string) == "10000" && content["msg"].(string) == "Success" && content["trade_status"] == "TRADE_SUCCESS" {
 			res.Valid = true
 			err = srv.successOrder(config.Alipay.Fee)
@@ -73,7 +74,6 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 				res.Error.Detail = "支付成功,更新订单状态失败!"
 				log.Fatal(req, res, err)
 			}
-			log.Fatal("Query.Alipay", req, res, err)
 			return nil
 		}
 		if content["trade_status"] == "TRADE_CLOSED" || content["trade_status"] == "TRADE_FINISHED" {
@@ -103,6 +103,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			return nil
 		}
 		res.Content = string(c) //数据正常返回
+		log.Fatal("Query.Wechat", req, res, err)
 		if content["trade_state"] == "SUCCESS" {
 			res.Valid = true
 			err = srv.successOrder(config.Wechat.Fee)
@@ -111,7 +112,6 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 				res.Error.Detail = "支付成功,更新订单状态失败!"
 				log.Fatal(req, res, err)
 			}
-			log.Fatal("Query.Wechat", req, res, err)
 			return nil
 		}
 		if content["trade_state"] == "CLOSED" || content["trade_state"] == "REVOKED" || content["trade_state"] == "PAYERROR" {
@@ -175,6 +175,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			return nil
 		}
 		res.Content = string(c) //数据正常返回
+		log.Fatal("AopF2F.Alipay", req, res, err)
 		if content["code"].(string) == "10000" && content["msg"].(string) == "Success" {
 			res.Valid = true
 			err = srv.successOrder(config.Alipay.Fee)
@@ -183,7 +184,6 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 				res.Error.Detail = "支付成功,更新订单状态失败!"
 				log.Fatal(req, res, err)
 			}
-			log.Fatal("AopF2F.Alipay", req, res, err)
 			return nil
 		}
 		return nil
@@ -204,6 +204,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			return nil
 		}
 		res.Content = string(c) //数据正常返回
+		log.Fatal("AopF2F.Wechat", req, res, err)
 		if content["result_code"] == "SUCCESS" {
 			res.Valid = true
 			err = srv.successOrder(config.Wechat.Fee)
@@ -212,7 +213,6 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 				res.Error.Detail = "支付成功,更新订单状态失败!"
 				log.Fatal(req, res, err)
 			}
-			log.Fatal("AopF2F.Wechat", req, res, err)
 			return nil
 		}
 		return nil
