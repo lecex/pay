@@ -20,7 +20,6 @@ type Pay struct {
 	Repo   repository.Order
 	Alipay *service.Alipay
 	Wechat *service.Wechat
-	Order  *orderPB.Order
 }
 
 // Query 支付查询
