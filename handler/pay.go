@@ -33,21 +33,21 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		log.Fatal(req, res, err)
 		return nil
 	}
-	err = srv.GetOrder(req.Order) //创建订单返回订单ID
+	repoOrder, err := srv.GetOrder(req.Order) //创建订单返回订单ID
 	if err != nil {
 		res.Error.Code = "Query.GetOrder"
 		res.Error.Detail = "获取订单失败"
 		log.Fatal(req, res, err)
 		return nil
 	}
-	// if srv.Order.Stauts == 1 {
+	// if repoOrder.Stauts == 1 {
 	// 	res.Valid = true
 	// 	return err // 支付成功返回
 	// }
-	// if srv.Order.Stauts == -1 {
+	// if repoOrder.Stauts == -1 {
 	// 	return fmt.Errorf("订单已关闭")
 	// }
-	switch srv.Order.Method {
+	switch repoOrder.Method {
 	case "alipay":
 		srv.newAlipayClient(config) //实例化支付宝连接
 		content, err := srv.Alipay.Query(req.Order)
@@ -68,7 +68,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		log.Fatal("Query.Alipay", req, res, err)
 		if content["code"].(string) == "10000" && content["msg"].(string) == "Success" && content["trade_status"] == "TRADE_SUCCESS" {
 			res.Valid = true
-			err = srv.successOrder(config.Alipay.Fee)
+			err = srv.successOrder(repoOrder, config.Alipay.Fee)
 			if err != nil {
 				res.Error.Code = "Query.Alipay.Update.Success"
 				res.Error.Detail = "支付成功,更新订单状态失败!"
@@ -77,8 +77,8 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			return nil
 		}
 		if content["trade_status"] == "TRADE_CLOSED" || content["trade_status"] == "TRADE_FINISHED" || content["sub_code"] == "ACQ.TRADE_NOT_EXIST" {
-			srv.Order.Stauts = -1
-			err = srv.Repo.Update(srv.Order)
+			repoOrder.Stauts = -1
+			err = srv.Repo.Update(repoOrder)
 			if err != nil {
 				res.Error.Code = "Query.Alipay.Update.Close"
 				res.Error.Detail = "支付成功,更新订单状态失败!"
@@ -106,7 +106,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		log.Fatal("Query.Wechat", req, res, err)
 		if content["trade_state"] == "SUCCESS" {
 			res.Valid = true
-			err = srv.successOrder(config.Wechat.Fee)
+			err = srv.successOrder(repoOrder, config.Wechat.Fee)
 			if err != nil {
 				res.Error.Code = "Query.Wechat.Update.Success"
 				res.Error.Detail = "支付成功,更新订单状态失败!"
@@ -115,8 +115,8 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			return nil
 		}
 		if content["trade_state"] == "CLOSED" || content["trade_state"] == "REVOKED" || content["trade_state"] == "PAYERROR" || content["err_code"] == "ORDERNOTEXIST" {
-			srv.Order.Stauts = -1
-			err = srv.Repo.Update(srv.Order)
+			repoOrder.Stauts = -1
+			err = srv.Repo.Update(repoOrder)
 			if err != nil {
 				res.Error.Code = "Query.Wechat.Update.Close"
 				res.Error.Detail = "支付成功,更新订单状态失败!"
@@ -143,18 +143,18 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		res.Error.Detail = "支付功能被禁用！请联系管理员。"
 		return nil
 	}
-	err = srv.HanderOrder(req.Order) //创建订单返回订单ID
+	_, err = srv.HanderOrder(req.Order) //创建订单返回订单ID
 	if err != nil {
 		res.Error.Code = "AopF2F.HanderOrder"
 		res.Error.Detail = "创建订单失败"
 		log.Fatal(req, res, err)
 		return nil
 	}
-	// if srv.Order.Stauts == 1 {
+	// if repoOrder.Stauts == 1 {
 	// 	res.Valid = true
 	// 	return err // 支付成功返回
 	// }
-	// if srv.Order.Stauts == -1 {
+	// if repoOrder.Stauts == -1 {
 	// 	return fmt.Errorf("订单已关闭")
 	// }
 	switch req.Order.Method {
@@ -216,17 +216,18 @@ func (srv *Pay) UserConfig(order *pd.Order) (*configPB.Config, error) {
 }
 
 // GetOrder 获取订单
-func (srv *Pay) GetOrder(order *pd.Order) (err error) {
-	srv.Order = &orderPB.Order{
+func (srv *Pay) GetOrder(order *pd.Order) (repoOrder *orderPB.Order, err error) {
+	repoOrder = &orderPB.Order{
 		StoreId: order.StoreId, // 商户门店编号 收款账号ID userID
 		OrderNo: order.OrderNo, // 订单编号
 	}
-	return srv.Repo.StoreIdAndOrderNoGet(srv.Order)
+	err = srv.Repo.StoreIdAndOrderNoGet(repoOrder)
+	return repoOrder, err
 }
 
 // HanderOrder 处理订单
-func (srv *Pay) HanderOrder(order *pd.Order) (err error) {
-	srv.Order = &orderPB.Order{
+func (srv *Pay) HanderOrder(order *pd.Order) (repoOrder *orderPB.Order, err error) {
+	repoOrder = &orderPB.Order{
 		StoreId:     order.StoreId,     // 商户门店编号 收款账号ID userID
 		Method:      order.Method,      // 付款方式 [支付宝、微信、银联等]
 		AuthCode:    order.AuthCode,    // 付款码
@@ -237,21 +238,21 @@ func (srv *Pay) HanderOrder(order *pd.Order) (err error) {
 		TerminalId:  order.TerminalId,  // 商户机具终端编号
 		Stauts:      0,                 // 订单状态 默认状态未付款
 	}
-	err = srv.Repo.StoreIdAndOrderNoGet(srv.Order)
+	err = srv.Repo.StoreIdAndOrderNoGet(repoOrder)
 	if err == gorm.ErrRecordNotFound {
-		err = srv.Repo.Create(srv.Order)
+		err = srv.Repo.Create(repoOrder)
 		if err != nil {
 			log.Fatal("Order.Create")
 			log.Fatal(err, order)
-			return err
+			return nil, err
 		}
 	}
-	if srv.Order.StoreId != order.StoreId || srv.Order.OrderNo != order.OrderNo || srv.Order.Method != order.Method || srv.Order.AuthCode != order.AuthCode || srv.Order.TotalAmount != order.TotalAmount {
+	if repoOrder.StoreId != order.StoreId || repoOrder.OrderNo != order.OrderNo || repoOrder.Method != order.Method || repoOrder.AuthCode != order.AuthCode || repoOrder.TotalAmount != order.TotalAmount {
 		log.Fatal("OrderVsOrder")
-		log.Fatal(srv.Order, order)
-		return errors.New("上报订单已存在,但数据校验失败")
+		log.Fatal(repoOrder, order)
+		return nil, errors.New("上报订单已存在,但数据校验失败")
 	}
-	return err
+	return repoOrder, err
 }
 
 // newAlipayClient 实例化支付宝付款方式连接
@@ -278,10 +279,10 @@ func (srv *Pay) newWechatClient(c *configPB.Config) {
 }
 
 // 支付成功订单处理
-func (srv *Pay) successOrder(fee int64) (err error) {
-	srv.Order.Stauts = 1
-	srv.Order.Fee = int64(math.Floor(float64(srv.Order.TotalAmount*fee)/10000 + 0.5)) // 相乘后转浮点型乘以万分之一然后四舍五入 【+0.5四舍五入取整】
-	err = srv.Repo.Update(srv.Order)
+func (srv *Pay) successOrder(repoOrder *orderPB.Order, fee int64) (err error) {
+	repoOrder.Stauts = 1
+	repoOrder.Fee = int64(math.Floor(float64(repoOrder.TotalAmount*fee)/10000 + 0.5)) // 相乘后转浮点型乘以万分之一然后四舍五入 【+0.5四舍五入取整】
+	err = srv.Repo.Update(repoOrder)
 	if err != nil {
 		return err
 	}
