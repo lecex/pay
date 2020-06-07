@@ -114,7 +114,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			}
 			return nil
 		}
-		if content["trade_state"] == "CLOSED" || content["trade_state"] == "REVOKED" || content["trade_state"] == "PAYERROR" || content["err_code"] == "ORDERNOTEXIST" {
+		if content["trade_state"] == "REFUND" || content["trade_state"] == "CLOSED" || content["trade_state"] == "REVOKED" || content["trade_state"] == "PAYERROR" || content["err_code"] == "ORDERNOTEXIST" {
 			repoOrder.Fee = 0
 			repoOrder.Stauts = -1
 			err = srv.Repo.Update(repoOrder)
