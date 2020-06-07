@@ -81,7 +81,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			err = srv.Repo.Update(repoOrder)
 			if err != nil {
 				res.Error.Code = "Query.Alipay.Update.Close"
-				res.Error.Detail = "支付成功,更新订单状态失败!"
+				res.Error.Detail = "支付失败,更新订单状态失败!"
 				log.Fatal(req, res, err)
 			}
 		}
@@ -120,7 +120,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			err = srv.Repo.Update(repoOrder)
 			if err != nil {
 				res.Error.Code = "Query.Wechat.Update.Close"
-				res.Error.Detail = "支付成功,更新订单状态失败!"
+				res.Error.Detail = "支付失败,更新订单状态失败!"
 				log.Fatal(req, res, err)
 			}
 		}
