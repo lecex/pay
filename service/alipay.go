@@ -54,7 +54,7 @@ func (srv *Alipay) AopF2F(order *proto.Order) (req mxj.Map, err error) {
 		"auth_code":       order.AuthCode,
 		"out_trade_no":    order.OrderNo,
 		"total_amount":    decimal.NewFromFloat(float64(order.TotalAmount)).Div(decimal.NewFromFloat(float64(100))),
-		"timeout_express": "30m",
+		"timeout_express": "2m",
 		"extend_params":   map[string]interface{}{"sys_service_provider_id": srv.config["SysServiceProviderId"]},
 	}
 	return srv.request(request)

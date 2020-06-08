@@ -121,7 +121,6 @@ func (repo *OrderRepository) Update(order *pb.Order) error {
 		return fmt.Errorf("请传入更新id")
 	}
 	order.CreatedAt = ""
-	log.Fatal("OrderUpdate", order)
 	return repo.DB.Save(order).Error
 }
 

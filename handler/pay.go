@@ -176,6 +176,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			return nil
 		}
 		res.Content = string(c) //数据正常返回
+		log.Fatal("AopF2F.AopF2F", req, res, err)
 		return nil
 	case "wechat":
 		srv.newWechatClient(config) //实例化微信连接
@@ -194,6 +195,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			return nil
 		}
 		res.Content = string(c) //数据正常返回
+		log.Fatal("AopF2F.Wechat", req, res, err)
 		return nil
 	}
 	return nil
