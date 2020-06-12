@@ -51,7 +51,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		srv.newAlipayClient(config) //实例化支付宝连接
 		content, err := srv.Alipay.Query(req.Order)
 		if err != nil {
-			res.Error.Code = "Query.Alipay"
+			res.Error.Code = "Query.Alipay.Error"
 			res.Error.Detail = "查询支付宝订单失败"
 			log.Fatal(req, res, err)
 			return nil
@@ -90,7 +90,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		srv.newWechatClient(config) //实例化连微信接
 		content, err := srv.Wechat.Query(req.Order)
 		if err != nil {
-			res.Error.Code = "Query.Wechat"
+			res.Error.Code = "Query.Wechat.Error"
 			res.Error.Detail = "查询微信订单失败"
 			log.Fatal(req, res, err)
 			return nil
