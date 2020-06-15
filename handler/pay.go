@@ -14,6 +14,15 @@ import (
 	"github.com/micro/go-micro/v2/util/log"
 )
 
+// USERPAYING 代付款
+// SUCCESS 付款成功
+// CLOSED 订单关闭
+const (
+	USERPAYING = "USERPAYING"
+	SUCCESS    = "SUCCESS"
+	CLOSED     = "CLOSED"
+)
+
 // Pay 支付结构
 type Pay struct {
 	Config repository.Config
@@ -46,6 +55,8 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 	// if repoOrder.Stauts == -1 {
 	// 	return fmt.Errorf("订单已关闭")
 	// }
+	res.Order = req.Order
+	res.Order.Stauts = USERPAYING // 订单状态默认代付款
 	switch repoOrder.Method {
 	case "alipay":
 		srv.newAlipayClient(config) //实例化支付宝连接
@@ -65,8 +76,9 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		}
 		res.Content = string(c) //数据正常返回
 		log.Fatal("Query.Alipay", req, res, err)
-		if content["code"].(string) == "10000" && content["msg"].(string) == "Success" && content["trade_status"] == "TRADE_SUCCESS" {
+		if content["code"].(string) == "10000" && content["msg"].(string) == "Success" && (content["trade_status"] == "TRADE_SUCCESS" || content["trade_status"] == "TRADE_FINISHED") {
 			res.Valid = true
+			res.Order.Stauts = SUCCESS
 			err = srv.successOrder(repoOrder, config.Alipay.Fee)
 			if err != nil {
 				res.Error.Code = "Query.Alipay.Update.Success"
@@ -75,9 +87,10 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			}
 			return nil
 		}
-		if content["trade_status"] == "TRADE_CLOSED" || content["trade_status"] == "TRADE_FINISHED" || content["sub_code"] == "ACQ.TRADE_NOT_EXIST" {
+		if content["trade_status"] == "TRADE_CLOSED" || content["sub_code"] == "ACQ.TRADE_NOT_EXIST" {
 			repoOrder.Fee = 0
 			repoOrder.Stauts = -1
+			res.Order.Stauts = CLOSED
 			err = srv.Repo.Update(repoOrder)
 			if err != nil {
 				res.Error.Code = "Query.Alipay.Update.Close"
@@ -106,6 +119,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		log.Fatal("Query.Wechat", req, res, err)
 		if content["trade_state"] == "SUCCESS" {
 			res.Valid = true
+			res.Order.Stauts = SUCCESS
 			err = srv.successOrder(repoOrder, config.Wechat.Fee)
 			if err != nil {
 				res.Error.Code = "Query.Wechat.Update.Success"
@@ -117,6 +131,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		if content["trade_state"] == "REFUND" || content["trade_state"] == "CLOSED" || content["trade_state"] == "REVOKED" || content["trade_state"] == "PAYERROR" || content["err_code"] == "ORDERNOTEXIST" {
 			repoOrder.Fee = 0
 			repoOrder.Stauts = -1
+			res.Order.Stauts = CLOSED
 			err = srv.Repo.Update(repoOrder)
 			if err != nil {
 				res.Error.Code = "Query.Wechat.Update.Close"
