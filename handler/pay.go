@@ -125,33 +125,32 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		log.Fatal("Query.Wechat", req, res, err)
 		// 错误处理
 		if content["return_code"] == "SUCCESS" { // 通信标识
-			if content["result_code"] == "SUCCESS" { // 交易信息返回标识
-				if content["trade_state"] == "SUCCESS" { // 交易状态标识
-					res.Valid = true
-					res.Order.Stauts = SUCCESS
-					err = srv.successOrder(repoOrder, config.Wechat.Fee)
-					if err != nil {
-						res.Order.Stauts = USERPAYING
-						res.Error.Code = "Query.Wechat.Update.Success"
-						res.Error.Detail = "支付成功,更新订单状态失败!"
-						log.Fatal(req, res, err)
-					}
-					return nil
+			if content["trade_state"] == "SUCCESS" { // 交易状态标识
+				res.Valid = true
+				res.Order.Stauts = SUCCESS
+				err = srv.successOrder(repoOrder, config.Wechat.Fee)
+				if err != nil {
+					res.Order.Stauts = USERPAYING
+					res.Error.Code = "Query.Wechat.Update.Success"
+					res.Error.Detail = "支付成功,更新订单状态失败!"
+					log.Fatal(req, res, err)
 				}
-				// SUCCESS—支付成功、REFUND—转入退款、NOTPAY—未支付、CLOSED—已关闭、REVOKED—已撤销（付款码支付）、USERPAYING--用户支付中（付款码支付）、PAYERROR--支付失败(其他原因，如银行返回失败)
-				if content["trade_state"] == "REFUND" || content["trade_state"] == "CLOSED" || content["trade_state"] == "REVOKED" || content["trade_state"] == "PAYERROR" || content["err_code"] == "ORDERNOTEXIST" {
-					repoOrder.Fee = 0
-					repoOrder.Stauts = -1
-					res.Order.Stauts = CLOSED
-					err = srv.Repo.Update(repoOrder)
-					if err != nil {
-						res.Order.Stauts = USERPAYING
-						res.Error.Code = "Query.Wechat.Update.Close"
-						res.Error.Detail = "支付失败,更新订单状态失败!"
-						log.Fatal(req, res, err)
-					}
+				return nil
+			}
+			// SUCCESS—支付成功、REFUND—转入退款、NOTPAY—未支付、CLOSED—已关闭、REVOKED—已撤销（付款码支付）、USERPAYING--用户支付中（付款码支付）、PAYERROR--支付失败(其他原因，如银行返回失败)
+			if content["trade_state"] == "REFUND" || content["trade_state"] == "CLOSED" || content["trade_state"] == "REVOKED" || content["trade_state"] == "PAYERROR" || content["err_code"] == "ORDERNOTEXIST" {
+				repoOrder.Fee = 0
+				repoOrder.Stauts = -1
+				res.Order.Stauts = CLOSED
+				err = srv.Repo.Update(repoOrder)
+				if err != nil {
+					res.Order.Stauts = USERPAYING
+					res.Error.Code = "Query.Wechat.Update.Close"
+					res.Error.Detail = "支付失败,更新订单状态失败!"
+					log.Fatal(req, res, err)
 				}
-			} else {
+			}
+			if content["err_code"] != nil { // 返回错误代码
 				res.Error.Code = content["err_code"].(string)
 				res.Error.Detail = content["err_code_des"].(string)
 			}
