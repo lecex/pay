@@ -150,7 +150,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 					log.Fatal(req, res, err)
 				}
 			}
-			if content["err_code"] != nil { // 返回错误代码
+			if content["result_code"] != "SUCCESS" { // 返回错误代码
 				res.Error.Code = content["err_code"].(string)
 				res.Error.Detail = content["err_code_des"].(string)
 			}
