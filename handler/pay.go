@@ -77,7 +77,6 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			return nil
 		}
 		res.Content = string(c) //数据正常返回
-		log.Fatal("Query.Alipay", req, res, err)
 		if (content["trade_status"] == "TRADE_SUCCESS" || content["trade_status"] == "TRADE_FINISHED") && content["code"] == "10000" && content["msg"] == "Success" { // 订单成功状态
 			res.Valid = true
 			res.Order.Stauts = SUCCESS
@@ -87,7 +86,6 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 				res.Error.Detail = "支付成功,更新订单状态失败!"
 				log.Fatal(req, res, err)
 			}
-			return nil
 		}
 		if content["trade_status"] == "TRADE_CLOSED" || content["sub_code"] == "ACQ.TRADE_NOT_EXIST" { // 订单关闭状态
 			repoOrder.Fee = 0
@@ -104,6 +102,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			res.Error.Code = content["sub_code"].(string)
 			res.Error.Detail = content["sub_msg"].(string)
 		}
+		log.Fatal("Query.Alipay", req, res, err)
 		return nil
 	case "wechat":
 		srv.newWechatClient(config) //实例化连微信接
@@ -122,7 +121,6 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			return nil
 		}
 		res.Content = string(c) //数据正常返回
-		log.Fatal("Query.Wechat", req, res, err)
 		// 错误处理
 		if content["return_code"] == "SUCCESS" { // 通信标识
 			if content["trade_state"] == "SUCCESS" { // 交易状态标识
@@ -135,7 +133,6 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 					res.Error.Detail = "支付成功,更新订单状态失败!"
 					log.Fatal(req, res, err)
 				}
-				return nil
 			}
 			// SUCCESS—支付成功、REFUND—转入退款、NOTPAY—未支付、CLOSED—已关闭、REVOKED—已撤销（付款码支付）、USERPAYING--用户支付中（付款码支付）、PAYERROR--支付失败(其他原因，如银行返回失败)
 			if content["trade_state"] == "REFUND" || content["trade_state"] == "CLOSED" || content["trade_state"] == "REVOKED" || content["trade_state"] == "PAYERROR" || content["err_code"] == "ORDERNOTEXIST" {
@@ -158,6 +155,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			res.Error.Code = "Query.Wechat.ReturnCode"
 			res.Error.Detail = content["return_msg"].(string)
 		}
+		log.Fatal("Query.Wechat", req, res, err)
 		return nil
 	}
 	return nil
