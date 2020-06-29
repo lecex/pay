@@ -14,7 +14,7 @@ import (
 	"github.com/micro/go-micro/v2/util/log"
 )
 
-// USERPAYING 代付款
+// USERPAYING 待付款
 // SUCCESS 付款成功
 // CLOSED 订单关闭
 const (
@@ -36,7 +36,7 @@ type Pay struct {
 func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
 	res.Error = &pd.Error{}
 	res.Order = req.Order
-	res.Order.Stauts = USERPAYING // 订单状态默认代付款
+	res.Order.Stauts = USERPAYING // 订单状态默认待付款
 	config, err := srv.UserConfig(req.Order)
 	if err != nil {
 		res.Error.Code = "Query.UserConfig"
@@ -76,7 +76,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			log.Fatal(req, res, err)
 			return nil
 		}
-		res.Content = string(c) //数据正常返回
+		res.Content = string(c)                                                                                                                                       //数据正常返回
 		if (content["trade_status"] == "TRADE_SUCCESS" || content["trade_status"] == "TRADE_FINISHED") && content["code"] == "10000" && content["msg"] == "Success" { // 订单成功状态
 			res.Valid = true
 			res.Order.Stauts = SUCCESS
