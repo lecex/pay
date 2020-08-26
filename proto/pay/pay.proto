@@ -6,6 +6,9 @@ service Pays {
     // AopF2F 商家扫用户付款码
     rpc AopF2F(Request) returns (Response) {}
     rpc Query(Request) returns (Response) {}
+    rpc Refund(Request) returns (Response) {} // 退款接口
+    rpc Refund(Request) returns (Response) {} // 撤销接口
+    
 }
 
 message Order {
