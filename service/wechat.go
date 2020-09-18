@@ -3,6 +3,7 @@ package service
 import (
 	"strconv"
 
+	orderPB "github.com/lecex/pay/proto/order"
 	proto "github.com/lecex/pay/proto/pay"
 
 	"github.com/bigrocs/wechat"
@@ -17,6 +18,7 @@ type Wechat struct {
 	config map[string]string
 }
 
+// NewClient 创建新的连接
 func (srv *Wechat) NewClient(config map[string]string, sandbox bool) {
 	srv.config = config
 	srv.Client = wechat.NewClient()
@@ -26,6 +28,8 @@ func (srv *Wechat) NewClient(config map[string]string, sandbox bool) {
 	c.ApiKey = config["ApiKey"]
 	c.SubAppId = config["SubAppId"]
 	c.SubMchId = config["SubMchId"]
+	c.PemCert = config["PemCert"]
+	c.PemKey = config["PemKey"]
 }
 
 // Query 支付查询
@@ -59,6 +63,34 @@ func (srv *Wechat) AopF2F(order *proto.Order) (req mxj.Map, err error) {
 	return srv.request(request)
 
 }
+
+// Cancel 撤销交易
+//    文档地址：https://pay.weixin.qq.com/wiki/doc/api/micropay.php?chapter=9_11&index=3
+func (srv *Wechat) Cancel(order *proto.Order) (req mxj.Map, err error) {
+	request := requests.NewCommonRequest()
+	request.Domain = "mch"
+	request.ApiName = "pay.reverse"
+	request.QueryParams = map[string]interface{}{
+		"out_trade_no": order.OrderNo,
+	}
+	return srv.request(request)
+}
+
+// Refund 交易退款
+//    文档地址：https://pay.weixin.qq.com/wiki/doc/api/micropay.php?chapter=9_4
+func (srv *Wechat) Refund(refundOrder *orderPB.Order, originalOrder *orderPB.Order) (req mxj.Map, err error) {
+	request := requests.NewCommonRequest()
+	request.Domain = "mch"
+	request.ApiName = "pay.refund"
+	request.QueryParams = map[string]interface{}{
+		"out_trade_no":  originalOrder.OrderNo,
+		"out_refund_no": refundOrder.OrderNo,
+		"total_fee":     strconv.FormatInt(originalOrder.TotalAmount, 10),
+		"refund_fee":    strconv.FormatInt(-refundOrder.TotalAmount, 10),
+	}
+	return srv.request(request)
+}
+
 func (srv *Wechat) request(request *requests.CommonRequest) (req mxj.Map, err error) {
 	// 请求
 	response, err := srv.Client.ProcessCommonRequest(request)

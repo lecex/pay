@@ -1,8 +1,11 @@
 package service
 
 import (
+	"strconv"
+
 	"github.com/clbanning/mxj"
 	notifyPB "github.com/lecex/pay/proto/notify"
+	orderPB "github.com/lecex/pay/proto/order"
 	proto "github.com/lecex/pay/proto/pay"
 	"github.com/shopspring/decimal"
 
@@ -56,6 +59,34 @@ func (srv *Alipay) AopF2F(order *proto.Order) (req mxj.Map, err error) {
 		"total_amount":    decimal.NewFromFloat(float64(order.TotalAmount)).Div(decimal.NewFromFloat(float64(100))),
 		"timeout_express": "2m",
 		"extend_params":   map[string]interface{}{"sys_service_provider_id": srv.config["SysServiceProviderId"]},
+	}
+	return srv.request(request)
+}
+
+// Cancel 撤销交易
+//    文档地址：https://opendocs.alipay.com/apis/api_1/alipay.trade.cancel/
+func (srv *Alipay) Cancel(order *proto.Order) (req mxj.Map, err error) {
+	c := srv.Client.Config
+	c.Method = "alipay.trade.cancel"
+	// 配置参数
+	request := requests.NewCommonRequest()
+	request.BizContent = map[string]interface{}{
+		"out_trade_no": order.OrderNo,
+	}
+	return srv.request(request)
+}
+
+// Refund 交易退款
+//    文档地址：https://opendocs.alipay.com/apis/api_1/alipay.trade.refund/
+func (srv *Alipay) Refund(refundOrder *orderPB.Order, originalOrder *orderPB.Order) (req mxj.Map, err error) {
+	c := srv.Client.Config
+	c.Method = "alipay.trade.refund"
+	// 配置参数
+	request := requests.NewCommonRequest()
+	request.BizContent = map[string]interface{}{
+		"out_trade_no":   originalOrder.OrderNo,
+		"out_request_no": refundOrder.OrderNo,
+		"refund_amount":  strconv.FormatInt(-refundOrder.TotalAmount, 10),
 	}
 	return srv.request(request)
 }

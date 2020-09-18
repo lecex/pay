@@ -36,8 +36,10 @@ message Wechat {
     string api_key = 4;
     string sub_app_id = 5;
     string sub_mch_id = 6;
-    int64 fee = 7;// 手续费比率 万分率
-    bool sandbox = 8;
+    string pem_cert = 7;
+    string pem_key = 8;
+    int64 fee = 9;// 手续费比率 万分率
+    bool sandbox = 10;
 }
 
 message Config {

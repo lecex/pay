@@ -6,6 +6,10 @@ import (
 	"testing"
 
 	configPB "github.com/lecex/pay/proto/config"
+	payPB "github.com/lecex/pay/proto/pay"
+	db "github.com/lecex/pay/providers/database"
+	"github.com/lecex/pay/service"
+	"github.com/lecex/pay/service/repository"
 
 	"github.com/lecex/pay/handler"
 )
@@ -64,40 +68,66 @@ func TestConfigGet(t *testing.T) {
 	t.Log(req, res, err)
 }
 
-// func TestAopF2FAlipay(t *testing.T) {
-// 	alipay := &service.Alipay{}
-// 	h := handler.Pay{nil, nil, alipay, nil}
-// 	req := &payPB.Request{
-// 		Order: &payPB.Order{
-// 			Method:      `alipay`,
-// 			AuthCode:    `285653237303565644`,
-// 			Title:       `Alipay扫码支付`,
-// 			OrderSn:     `GZ202001011753431451`,
-// 			TotalAmount: 200001,
-// 		},
-// 	}
-// 	res := &payPB.Response{}
-// 	err := h.AopF2F(context.TODO(), req, res)
-// 	// fmt.Println(req, res, err)
-// 	t.Log(req, res, err)
+func TestAopF2FWechat(t *testing.T) {
+	h := handler.Pay{
+		Config: &repository.ConfigRepository{db.DB},
+		Repo:   &repository.OrderRepository{db.DB},
+		Alipay: &service.Alipay{},
+		Wechat: &service.Wechat{},
+	}
+	req := &payPB.Request{
+		Order: &payPB.Order{
+			StoreName:   `bvbv01`,
+			Method:      `wechat`,
+			AuthCode:    `134711673107134820`,
+			Title:       `Wechat扫码支付`,
+			OrderNo:     `GTZ2020010117534314591`,
+			TotalAmount: 2,
+		},
+	}
+	res := &payPB.Response{}
+	err := h.AopF2F(context.TODO(), req, res)
+	// fmt.Println(req, res, err)
+	t.Log("TestAopF2FWechat", req, res, err)
 
-// }
+}
 
-// func TestAopF2FWechat(t *testing.T) {
-// 	wecaht := &service.Wechat{}
-// 	h := handler.Pay{nil, nil, nil, wecaht}
-// 	req := &payPB.Request{
-// 		Order: &payPB.Order{
-// 			Method:      `wechat`,
-// 			AuthCode:    `134527825438234112`,
-// 			Title:       `Wechat扫码支付`,
-// 			OrderSn:     `GZ202001011753431461`,
-// 			TotalAmount: 1,
-// 		},
-// 	}
-// 	res := &payPB.Response{}
-// 	err := h.AopF2F(context.TODO(), req, res)
-// 	// fmt.Println(req, res, err)
-// 	t.Log(req, res, err)
+func TestCancel(t *testing.T) {
+	h := handler.Pay{
+		Config: &repository.ConfigRepository{db.DB},
+		Repo:   &repository.OrderRepository{db.DB},
+		Alipay: &service.Alipay{},
+		Wechat: &service.Wechat{},
+	}
+	req := &payPB.Request{
+		Order: &payPB.Order{
+			StoreName: `bvbv01`,
+			OrderNo:   `GTZ2020010117534314591`,
+		},
+	}
+	res := &payPB.Response{}
+	err := h.Cancel(context.TODO(), req, res)
+	// fmt.Println(req, res, err)
+	t.Log("TestRefundWechat", req, res, err)
 
-// }
+}
+
+func TestAffirmRefund(t *testing.T) {
+	h := handler.Pay{
+		Config: &repository.ConfigRepository{db.DB},
+		Repo:   &repository.OrderRepository{db.DB},
+		Alipay: &service.Alipay{},
+		Wechat: &service.Wechat{},
+	}
+	req := &payPB.Request{
+		Order: &payPB.Order{
+			StoreName: `bvbv01`,
+			OrderNo:   `GTZ2020010117534314591_010101`,
+		},
+	}
+	res := &payPB.Response{}
+	err := h.AffirmRefund(context.TODO(), req, res)
+	// fmt.Println(req, res, err)
+	t.Log("TestAffirmRefund", req, res, err)
+
+}

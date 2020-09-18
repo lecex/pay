@@ -67,6 +67,8 @@ func wechat() {
 			api_key varchar(255) DEFAULT NULL COMMENT 'API秘钥',
 			sub_app_id varchar(255) DEFAULT NULL COMMENT '子应用ID',
 			sub_mch_id varchar(255) DEFAULT NULL COMMENT '子商家ID',
+			pem_cert text DEFAULT NULL COMMENT 'pem证书',
+			pem_key text DEFAULT NULL COMMENT 'pem秘钥',
 			fee int(11) DEFAULT 0 COMMENT '手续费单位万分之一',
 			sandbox int(11) DEFAULT 0 COMMENT '沙盒模式(禁用0、启用1)',
 			PRIMARY KEY (id)
@@ -92,6 +94,8 @@ func order() {
 			operator_id varchar(16) DEFAULT NULL COMMENT '商户操作员编号',
 			terminal_id varchar(16) DEFAULT NULL COMMENT '商户机具终端编号',
 			stauts int(11) DEFAULT 0 DEFAULT NULL COMMENT '订单状态 [-1 订单关闭,0 待付款,1 付款成功]',
+			link_id varchar(36) DEFAULT NULL COMMENT '关联订单ID',
+			refund_fee int(16) DEFAULT NULL COMMENT '订单退款总金额',
 			created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY (id),

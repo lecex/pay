@@ -2,10 +2,11 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"math"
+	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/lecex/core/uitl"
 	configPB "github.com/lecex/pay/proto/config"
 	orderPB "github.com/lecex/pay/proto/order"
 	pd "github.com/lecex/pay/proto/pay"
@@ -14,13 +15,13 @@ import (
 	"github.com/micro/go-micro/v2/util/log"
 )
 
-// USERPAYING 待付款
+// USERPAYING 待付款|待退款
 // SUCCESS 付款成功
 // CLOSED 订单关闭
 const (
-	USERPAYING = "USERPAYING"
-	SUCCESS    = "SUCCESS"
-	CLOSED     = "CLOSED"
+	USERPAYING = "USERPAYING" // 0
+	SUCCESS    = "SUCCESS"    // 1
+	CLOSED     = "CLOSED"     // -1
 )
 
 // Pay 支付结构
@@ -31,24 +32,36 @@ type Pay struct {
 	Wechat *service.Wechat
 }
 
-// Query 支付查询
-// https://pay.weixin.qq.com/wiki/doc/api/micropay.php?chapter=9_2
-func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
+// AopF2F 商家扫用户付款码
+// https://pay.weixin.qq.com/wiki/doc/api/micropay.php?chapter=9_10&index=1
+func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
 	res.Error = &pd.Error{}
-	res.Order = req.Order
-	res.Order.Stauts = USERPAYING // 订单状态默认待付款
-	config, err := srv.UserConfig(req.Order)
+	config, err := srv.userConfig(req.Order)
 	if err != nil {
-		res.Error.Code = "Query.UserConfig"
+		res.Error.Code = "AopF2F.userConfig"
 		res.Error.Detail = "查询配置信息失败"
 		log.Fatal(req, res, err)
 		return nil
 	}
-	repoOrder, err := srv.GetOrder(req.Order) //创建订单返回订单ID
+	if !config.Stauts {
+		res.Error.Code = "AopF2F.Stauts"
+		res.Error.Detail = "支付功能被禁用！请联系管理员。"
+		return nil
+	}
+	_, err = srv.handerOrder(&orderPB.Order{
+		StoreId:     req.Order.StoreId,     // 商户门店编号 收款账号ID userID
+		Method:      req.Order.Method,      // 付款方式 [支付宝、微信、银联等]
+		AuthCode:    req.Order.AuthCode,    // 付款码
+		Title:       req.Order.Title,       // 订单标题
+		TotalAmount: req.Order.TotalAmount, // 订单总金额
+		OrderNo:     req.Order.OrderNo,     // 订单编号
+		OperatorId:  req.Order.OperatorId,  // 商户操作员编号
+		TerminalId:  req.Order.TerminalId,  // 商户机具终端编号
+		Stauts:      0,                     // 订单状态 默认状态未付款
+	}) //创建订单返回订单ID
 	if err != nil {
-		res.Order.Stauts = CLOSED
-		res.Error.Code = "Query.GetOrder"
-		res.Error.Detail = "获取订单失败"
+		res.Error.Code = "AopF2F.handerOrder"
+		res.Error.Detail = "创建订单失败"
 		log.Fatal(req, res, err)
 		return nil
 	}
@@ -59,6 +72,70 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 	// if repoOrder.Stauts == -1 {
 	// 	return fmt.Errorf("订单已关闭")
 	// }
+	switch req.Order.Method {
+	case "alipay":
+		srv.newAlipayClient(config) //实例化连支付宝接
+		content, err := srv.Alipay.AopF2F(req.Order)
+		if err != nil {
+			res.Error.Code = "AopF2F.Alipay"
+			res.Error.Detail = "支付宝下单失败:" + err.Error()
+			log.Fatal(req, res, err)
+			return nil
+		}
+		c, err := content.Json()
+		if err != nil {
+			res.Error.Code = "AopF2F.Alipay.Mxj"
+			res.Error.Detail = "支付宝下单返回数据解析失败"
+			log.Fatal(req, res, err)
+			return nil
+		}
+		res.Content = string(c) //数据正常返回
+		log.Fatal("AopF2F.AopF2F", req, res, err)
+		return nil
+	case "wechat":
+		srv.newWechatClient(config) //实例化微信连接
+		content, err := srv.Wechat.AopF2F(req.Order)
+		if err != nil {
+			res.Error.Code = "AopF2F.Wechat"
+			res.Error.Detail = "微信下单失败:" + err.Error()
+			log.Fatal(req, res, err)
+			return nil
+		}
+		c, err := content.Json()
+		if err != nil {
+			res.Error.Code = "AopF2F.Wechat.Mxj"
+			res.Error.Detail = "微信下单返回数据解析失败"
+			log.Fatal(req, res, err)
+			return nil
+		}
+		res.Content = string(c) //数据正常返回
+		log.Fatal("AopF2F.Wechat", req, res, err)
+		return nil
+	}
+	return nil
+}
+
+// Query 支付查询
+// https://pay.weixin.qq.com/wiki/doc/api/micropay.php?chapter=9_2
+func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
+	res.Error = &pd.Error{}
+	res.Order = req.Order
+	res.Order.Stauts = USERPAYING // 订单状态默认待付款
+	config, err := srv.userConfig(req.Order)
+	if err != nil {
+		res.Error.Code = "Query.userConfig"
+		res.Error.Detail = "查询配置信息失败"
+		log.Fatal(req, res, err)
+		return nil
+	}
+	repoOrder, err := srv.getOrder(req.Order) //创建订单返回订单ID
+	if err != nil {
+		res.Order.Stauts = CLOSED
+		res.Error.Code = "Query.GetOrder"
+		res.Error.Detail = "获取订单失败"
+		log.Fatal(req, res, err)
+		return nil
+	}
 	switch repoOrder.Method {
 	case "alipay":
 		srv.newAlipayClient(config) //实例化支付宝连接
@@ -161,81 +238,251 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 	return nil
 }
 
-// AopF2F 商家扫用户付款码
-// https://pay.weixin.qq.com/wiki/doc/api/micropay.php?chapter=9_10&index=1
-func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
+// Cancel 交易撤销
+func (srv *Pay) Cancel(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
 	res.Error = &pd.Error{}
-	config, err := srv.UserConfig(req.Order)
+	res.Order = req.Order
+	config, err := srv.userConfig(req.Order)
 	if err != nil {
-		res.Error.Code = "AopF2F.UserConfig"
-		res.Error.Detail = "查询配置信息失败"
+		res.Error.Code = "Cancel.userConfig"
+		res.Error.Detail = "撤销查询配置信息失败"
 		log.Fatal(req, res, err)
 		return nil
 	}
-	if !config.Stauts {
-		res.Error.Code = "AopF2F.Stauts"
-		res.Error.Detail = "支付功能被禁用！请联系管理员。"
-		return nil
-	}
-	_, err = srv.HanderOrder(req.Order) //创建订单返回订单ID
+	repoOrder, err := srv.getOrder(req.Order) //获取订单
 	if err != nil {
-		res.Error.Code = "AopF2F.HanderOrder"
-		res.Error.Detail = "创建订单失败"
+		res.Error.Code = "Cancel.getOrder"
+		res.Error.Detail = "撤销获取订单失败"
 		log.Fatal(req, res, err)
 		return nil
 	}
-	// if repoOrder.Stauts == 1 {
-	// 	res.Valid = true
-	// 	return err // 支付成功返回
-	// }
-	// if repoOrder.Stauts == -1 {
-	// 	return fmt.Errorf("订单已关闭")
-	// }
-	switch req.Order.Method {
+	createdAt, err := time.ParseInLocation("2006-01-02T15:04:05+08:00", repoOrder.CreatedAt, time.Local)
+	if err != nil {
+		res.Error.Code = "Cancel.time.ParseInLocation"
+		res.Error.Detail = "撤销订单获取订单创建时间失败"
+		log.Fatal(req, res, err)
+		return nil
+	}
+	if uitl.GetZeroTime(createdAt) != uitl.GetZeroTime(time.Now()) {
+		res.Error.Code = "Cancel.createdAt.Not.SameDay"
+		res.Error.Detail = "只能撤销当天订单"
+		log.Fatal(req, res, err)
+		return nil
+	}
+	switch repoOrder.Method {
 	case "alipay":
 		srv.newAlipayClient(config) //实例化连支付宝接
-		content, err := srv.Alipay.AopF2F(req.Order)
+		content, err := srv.Alipay.Cancel(req.Order)
 		if err != nil {
-			res.Error.Code = "AopF2F.Alipay"
+			res.Error.Code = "Cancel.Alipay"
 			res.Error.Detail = "支付宝下单失败:" + err.Error()
 			log.Fatal(req, res, err)
 			return nil
 		}
+		if content["code"] == "10000" && content["msg"] == "Success" { // 订单关闭状态
+			res.Valid = true
+			repoOrder.Fee = 0 // 手续费改为 0
+			repoOrder.Stauts = -1
+			res.Order.Stauts = CLOSED
+			err = srv.Repo.Update(repoOrder)
+			if err != nil {
+				res.Error.Code = "Cancel.Alipay.Update.Close"
+				res.Error.Detail = "支付宝订单撤销,更新订单状态失败!"
+				log.Fatal(req, res, err)
+			}
+		}
 		c, err := content.Json()
 		if err != nil {
-			res.Error.Code = "AopF2F.Alipay.Mxj"
-			res.Error.Detail = "支付宝下单返回数据解析失败"
+			res.Error.Code = "Cancel.Alipay.Mxj"
+			res.Error.Detail = "支付宝订单撤销返回数据解析失败"
 			log.Fatal(req, res, err)
 			return nil
 		}
 		res.Content = string(c) //数据正常返回
-		log.Fatal("AopF2F.AopF2F", req, res, err)
+		log.Fatal("Cancel", req, res, err)
 		return nil
 	case "wechat":
-		srv.newWechatClient(config) //实例化微信连接
-		content, err := srv.Wechat.AopF2F(req.Order)
+		srv.newWechatClient(config) //实例化连支付宝接
+		content, err := srv.Wechat.Cancel(req.Order)
 		if err != nil {
-			res.Error.Code = "AopF2F.Wechat"
-			res.Error.Detail = "微信下单失败:" + err.Error()
+			res.Error.Code = "Refund.Wechat"
+			res.Error.Detail = "微信撤销失败:" + err.Error()
 			log.Fatal(req, res, err)
 			return nil
 		}
+		if content["return_code"] == "SUCCESS" && content["result_code"] == "SUCCESS" { // 订单关闭状态
+			res.Valid = true
+			repoOrder.Fee = 0 // 手续费改为 0
+			repoOrder.Stauts = -1
+			res.Order.Stauts = CLOSED
+			err = srv.Repo.Update(repoOrder)
+			if err != nil {
+				res.Error.Code = "Refund.Wechat.Update.Close"
+				res.Error.Detail = "微信订单撤销,更新订单状态失败!"
+				log.Fatal(req, res, err)
+			}
+		}
 		c, err := content.Json()
 		if err != nil {
-			res.Error.Code = "AopF2F.Wechat.Mxj"
-			res.Error.Detail = "微信下单返回数据解析失败"
+			res.Error.Code = "Refund.Wechat.Mxj"
+			res.Error.Detail = "微信订单撤销返回数据解析失败"
 			log.Fatal(req, res, err)
 			return nil
 		}
 		res.Content = string(c) //数据正常返回
-		log.Fatal("AopF2F.Wechat", req, res, err)
+		log.Fatal("Refund", req, res, err)
 		return nil
 	}
 	return nil
 }
 
-// UserConfig 用户配置
-func (srv *Pay) UserConfig(order *pd.Order) (*configPB.Config, error) {
+// Refund 交易退款
+func (srv *Pay) Refund(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
+	res.Error = &pd.Error{}
+	config, err := srv.userConfig(req.Order) // 获取配置同时根据商家名称赋值商家id
+	if err != nil {
+		res.Error.Code = "Refund.userConfig"
+		res.Error.Detail = "退款是支付配置信息查询失败"
+		log.Fatal(req, res, err)
+		return nil
+	}
+	originalOrder, err := srv.getOrder(req.Order) //创建订单返回订单ID
+	if err != nil {
+		res.Error.Code = "Refund.getOrder"
+		res.Error.Detail = "退款获取订单失败"
+		log.Fatal(req, res, err)
+		return nil
+	}
+	if originalOrder.Stauts != 1 {
+		res.Error.Code = "Refund.Stauts"
+		res.Error.Detail = "订单未支付成功不允许退款"
+		log.Fatal(req, originalOrder)
+		return nil
+	}
+	if req.Order.RefundFee > (originalOrder.TotalAmount - originalOrder.RefundFee) {
+		res.Error.Code = "Refund.RefundFee"
+		res.Error.Detail = "退款金额大于可退款金额"
+		log.Fatal(req, originalOrder)
+		return nil
+	}
+	// 构建新的退款订单
+	if req.Order.RefundFee == 0 {
+		req.Order.TotalAmount = -originalOrder.TotalAmount // 全额退款
+	} else {
+		req.Order.TotalAmount = -req.Order.RefundFee // 退款改为负数金额
+	}
+	if req.Order.RefundOrderNo == "" {
+		req.Order.RefundOrderNo = originalOrder.OrderNo + "_Q" // 全额退款编号自动构建
+	}
+	refundOrder, err := srv.handerOrder(&orderPB.Order{
+		StoreId:     originalOrder.StoreId,    // 商户门店编号 收款账号ID userID
+		Method:      originalOrder.Method,     // 付款方式 [支付宝、微信、银联等]
+		AuthCode:    originalOrder.AuthCode,   // 付款码
+		Title:       originalOrder.Title,      // 订单标题
+		TotalAmount: req.Order.TotalAmount,    // 订单总金额
+		OrderNo:     req.Order.RefundOrderNo,  // 订单编号
+		OperatorId:  originalOrder.OperatorId, // 商户操作员编号
+		TerminalId:  originalOrder.TerminalId, // 商户机具终端编号
+		LinkId:      originalOrder.Id,
+		Stauts:      0, // 订单状态 默认状态未付款
+	}) //创建退款订单返回订单ID
+	if req.Order.Verify { // 需要验证授权
+		res.Valid = true
+	} else {
+		res.Content, err = srv.handerRefund(config, refundOrder, originalOrder)
+	}
+	return nil
+}
+
+// AffirmRefund 确认退款
+func (srv *Pay) AffirmRefund(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
+	res.Error = &pd.Error{}
+	config, err := srv.userConfig(req.Order) // 获取配置同时根据商家名称赋值商家id
+	if err != nil {
+		res.Error.Code = "AffirmRefund.userConfig"
+		res.Error.Detail = "退款是支付配置信息查询失败"
+		log.Fatal(req, res, err)
+		return nil
+	}
+	refundOrder, err := srv.getOrder(req.Order) //创建订单返回订单ID
+	if err != nil {
+		res.Error.Code = "AffirmRefund.getOrder"
+		res.Error.Detail = "确认退款获取订单失败"
+		log.Fatal(req, res, err)
+		return nil
+	}
+	originalOrder := &orderPB.Order{
+		Id: refundOrder.LinkId,
+	}
+	err = srv.Repo.Get(originalOrder)
+	if err != nil {
+		res.Error.Code = "AffirmRefund.Repo.Get"
+		res.Error.Detail = "确认退款获取原始订单失败"
+		log.Fatal(req, res, err)
+		return nil
+	}
+	res.Content, err = srv.handerRefund(config, refundOrder, originalOrder)
+	if err == nil {
+		res.Valid = true
+	}
+	return
+}
+
+// handerRefund 处理退款
+func (srv *Pay) handerRefund(config *configPB.Config, refundOrder *orderPB.Order, originalOrder *orderPB.Order) (res string, err error) {
+	switch refundOrder.Method {
+	case "alipay":
+		srv.newAlipayClient(config) //实例化连支付宝接
+		content, err := srv.Alipay.Refund(refundOrder, originalOrder)
+		if err != nil {
+			return res, err
+		}
+		if content["code"] == "10000" && content["msg"] == "Success" { // 订单关闭状态
+			err = srv.successOrder(refundOrder, config.Alipay.Fee)
+			if err != nil {
+				return res, err
+			}
+			originalOrder.RefundFee = originalOrder.RefundFee + (-refundOrder.TotalAmount) // 已有退款加正数退款
+			err = srv.Repo.Update(originalOrder)
+			if err != nil {
+				return res, err
+			}
+		}
+		c, err := content.Json()
+		if err != nil {
+			return res, err
+		}
+		res = string(c) //数据正常返回
+		return res, err
+	case "wechat":
+		srv.newWechatClient(config) //实例化连支付宝接
+		content, err := srv.Wechat.Refund(refundOrder, originalOrder)
+		if err != nil {
+			return res, err
+		}
+		if content["return_code"] == "SUCCESS" && content["result_code"] == "SUCCESS" { // 订单关闭状态
+			err = srv.successOrder(refundOrder, config.Wechat.Fee)
+			if err != nil {
+				return res, err
+			}
+			originalOrder.RefundFee = originalOrder.RefundFee + (-refundOrder.TotalAmount) // 已有退款加正数退款
+			err = srv.Repo.Update(originalOrder)
+			if err != nil {
+				return res, err
+			}
+		}
+		c, err := content.Json()
+		if err != nil {
+			return res, err
+		}
+		res = string(c) //数据正常返回
+		return res, err
+	}
+	return res, err
+}
+
+// userConfig 用户配置
+func (srv *Pay) userConfig(order *pd.Order) (*configPB.Config, error) {
 	config := &configPB.Config{}
 	if order.StoreId != "" {
 		config.Id = order.StoreId
@@ -251,8 +498,8 @@ func (srv *Pay) UserConfig(order *pd.Order) (*configPB.Config, error) {
 	return config, err
 }
 
-// GetOrder 获取订单
-func (srv *Pay) GetOrder(order *pd.Order) (repoOrder *orderPB.Order, err error) {
+// getOrder 获取订单
+func (srv *Pay) getOrder(order *pd.Order) (repoOrder *orderPB.Order, err error) {
 	repoOrder = &orderPB.Order{
 		StoreId: order.StoreId, // 商户门店编号 收款账号ID userID
 		OrderNo: order.OrderNo, // 订单编号
@@ -261,32 +508,16 @@ func (srv *Pay) GetOrder(order *pd.Order) (repoOrder *orderPB.Order, err error) 
 	return repoOrder, err
 }
 
-// HanderOrder 处理订单
-func (srv *Pay) HanderOrder(order *pd.Order) (repoOrder *orderPB.Order, err error) {
-	repoOrder = &orderPB.Order{
-		StoreId:     order.StoreId,     // 商户门店编号 收款账号ID userID
-		Method:      order.Method,      // 付款方式 [支付宝、微信、银联等]
-		AuthCode:    order.AuthCode,    // 付款码
-		Title:       order.Title,       // 订单标题
-		TotalAmount: order.TotalAmount, // 订单总金额
-		OrderNo:     order.OrderNo,     // 订单编号
-		OperatorId:  order.OperatorId,  // 商户操作员编号
-		TerminalId:  order.TerminalId,  // 商户机具终端编号
-		Stauts:      0,                 // 订单状态 默认状态未付款
-	}
-	err = srv.Repo.StoreIdAndOrderNoGet(repoOrder)
+// handerOrder 处理订单
+func (srv *Pay) handerOrder(repoOrder *orderPB.Order) (*orderPB.Order, error) {
+	err := srv.Repo.StoreIdAndOrderNoGet(repoOrder)
 	if err == gorm.ErrRecordNotFound {
 		err = srv.Repo.Create(repoOrder)
 		if err != nil {
 			log.Fatal("Order.Create")
-			log.Fatal(err, order)
+			log.Fatal(err, repoOrder)
 			return nil, err
 		}
-	}
-	if repoOrder.StoreId != order.StoreId || repoOrder.OrderNo != order.OrderNo || repoOrder.Method != order.Method || repoOrder.AuthCode != order.AuthCode || repoOrder.TotalAmount != order.TotalAmount {
-		log.Fatal("OrderVsOrder")
-		log.Fatal(repoOrder, order)
-		return nil, errors.New("上报订单已存在,但数据校验失败")
 	}
 	return repoOrder, err
 }
@@ -311,6 +542,8 @@ func (srv *Pay) newWechatClient(c *configPB.Config) {
 		"ApiKey":   c.Wechat.ApiKey,
 		"SubAppId": c.Wechat.SubAppId,
 		"SubMchId": c.Wechat.SubMchId,
+		"PemCert":  c.Wechat.PemCert,
+		"PemKey":   c.Wechat.PemKey,
 	}, c.Wechat.Sandbox)
 }
 

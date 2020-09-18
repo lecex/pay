@@ -32,9 +32,12 @@ message Order {
     string operator_id = 9; // 商户操作员编号
     string terminal_id = 10; // 商户机具终端编号
     int64 stauts = 11;    // 订单状态 
-    string created_at = 12;
-    string updated_at = 13;
+    int64 refund_fee = 12; // 已退款金额
+    string link_id = 13; // 退款订单关联订单
+    string created_at = 14;
+    string updated_at = 15;
 }
+
 message ListQuery{
     int64 limit = 1;          // 返回数量
     int64 page = 2;           // 页面
@@ -45,6 +48,7 @@ message ListQuery{
 message Request {
     ListQuery list_query = 1;           // 列表分页请求
     Order order = 2;                      // 请求支付订单
+
 }
 
 message Response {

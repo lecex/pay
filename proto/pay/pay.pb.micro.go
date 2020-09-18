@@ -37,6 +37,9 @@ type PaysService interface {
 	// AopF2F 商家扫用户付款码
 	AopF2F(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error)
 	Query(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error)
+	Cancel(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error)
+	Refund(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error)
+	AffirmRefund(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error)
 }
 
 type paysService struct {
@@ -71,18 +74,54 @@ func (c *paysService) Query(ctx context.Context, in *Request, opts ...client.Cal
 	return out, nil
 }
 
+func (c *paysService) Cancel(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error) {
+	req := c.c.NewRequest(c.name, "Pays.Cancel", in)
+	out := new(Response)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *paysService) Refund(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error) {
+	req := c.c.NewRequest(c.name, "Pays.Refund", in)
+	out := new(Response)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *paysService) AffirmRefund(ctx context.Context, in *Request, opts ...client.CallOption) (*Response, error) {
+	req := c.c.NewRequest(c.name, "Pays.AffirmRefund", in)
+	out := new(Response)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Pays service
 
 type PaysHandler interface {
 	// AopF2F 商家扫用户付款码
 	AopF2F(context.Context, *Request, *Response) error
 	Query(context.Context, *Request, *Response) error
+	Cancel(context.Context, *Request, *Response) error
+	Refund(context.Context, *Request, *Response) error
+	AffirmRefund(context.Context, *Request, *Response) error
 }
 
 func RegisterPaysHandler(s server.Server, hdlr PaysHandler, opts ...server.HandlerOption) error {
 	type pays interface {
 		AopF2F(ctx context.Context, in *Request, out *Response) error
 		Query(ctx context.Context, in *Request, out *Response) error
+		Cancel(ctx context.Context, in *Request, out *Response) error
+		Refund(ctx context.Context, in *Request, out *Response) error
+		AffirmRefund(ctx context.Context, in *Request, out *Response) error
 	}
 	type Pays struct {
 		pays
@@ -101,4 +140,16 @@ func (h *paysHandler) AopF2F(ctx context.Context, in *Request, out *Response) er
 
 func (h *paysHandler) Query(ctx context.Context, in *Request, out *Response) error {
 	return h.PaysHandler.Query(ctx, in, out)
+}
+
+func (h *paysHandler) Cancel(ctx context.Context, in *Request, out *Response) error {
+	return h.PaysHandler.Cancel(ctx, in, out)
+}
+
+func (h *paysHandler) Refund(ctx context.Context, in *Request, out *Response) error {
+	return h.PaysHandler.Refund(ctx, in, out)
+}
+
+func (h *paysHandler) AffirmRefund(ctx context.Context, in *Request, out *Response) error {
+	return h.PaysHandler.AffirmRefund(ctx, in, out)
 }
