@@ -137,6 +137,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		return nil
 	}
 	if repoOrder.TotalAmount < 0 { // 退款查询时不进行是不进行实际查询等待系统自动结果
+		res.Order.Method = repoOrder.Method
 		switch repoOrder.Stauts {
 		case -1:
 			res.Order.Stauts = CLOSED
@@ -402,6 +403,8 @@ func (srv *Pay) Refund(ctx context.Context, req *pd.Request, res *pd.Response) (
 		Stauts:      0, // 订单状态 默认状态未付款
 	}) //创建退款订单返回订单ID
 	if req.Order.Verify { // 需要验证授权
+		res.Order = req.Order
+		res.Order.Method = originalOrder.Method
 		res.Valid = true
 	} else {
 		res.Content, err = srv.handerRefund(config, refundOrder, originalOrder)
