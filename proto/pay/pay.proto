@@ -24,7 +24,7 @@ message Order {
     string terminal_id = 9;     // 商户机具终端编号
     string stauts = 10;         // 订单状态 
     int64 refund_fee = 11;     // 退款金额 [如果不传默认全额退款]
-    string refund_order_no = 12;// 退款订单编号 【非全额退款必须传入、每次退款退款编号不一样】
+    string original_order_no = 12;// 退款订单编号 【非全额退款必须传入、每次退款退款编号不一样】
     bool verify = 13;           // 退款是否需要审核
     string created_at = 14;
     string updated_at = 15;

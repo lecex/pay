@@ -136,6 +136,17 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		log.Fatal(req, res, err)
 		return nil
 	}
+	if repoOrder.TotalAmount < 0 { // 退款查询时不进行是不进行实际查询等待系统自动结果
+		switch repoOrder.Stauts {
+		case -1:
+			res.Order.Stauts = CLOSED
+		case 0:
+			res.Order.Stauts = USERPAYING
+		case 1:
+			res.Order.Stauts = SUCCESS
+		}
+		return nil
+	}
 	switch repoOrder.Method {
 	case "alipay":
 		srv.newAlipayClient(config) //实例化支付宝连接
@@ -346,7 +357,11 @@ func (srv *Pay) Refund(ctx context.Context, req *pd.Request, res *pd.Response) (
 		log.Fatal(req, res, err)
 		return nil
 	}
-	originalOrder, err := srv.getOrder(req.Order) //创建订单返回订单ID
+	originalOrder := &orderPB.Order{
+		StoreId: req.Order.StoreId,         // 商户门店编号 收款账号ID userID
+		OrderNo: req.Order.OriginalOrderNo, // 订单编号
+	}
+	err = srv.Repo.StoreIdAndOrderNoGet(originalOrder) //创建订单返回订单ID
 	if err != nil {
 		res.Error.Code = "Refund.getOrder"
 		res.Error.Detail = "退款获取订单失败"
@@ -371,8 +386,8 @@ func (srv *Pay) Refund(ctx context.Context, req *pd.Request, res *pd.Response) (
 	} else {
 		req.Order.TotalAmount = -req.Order.RefundFee // 退款改为负数金额
 	}
-	if req.Order.RefundOrderNo == "" {
-		req.Order.RefundOrderNo = originalOrder.OrderNo + "_Q" // 全额退款编号自动构建
+	if req.Order.OrderNo == "" {
+		req.Order.OrderNo = originalOrder.OrderNo + "_Q" // 全额退款编号自动构建
 	}
 	refundOrder, err := srv.handerOrder(&orderPB.Order{
 		StoreId:     originalOrder.StoreId,    // 商户门店编号 收款账号ID userID
@@ -380,7 +395,7 @@ func (srv *Pay) Refund(ctx context.Context, req *pd.Request, res *pd.Response) (
 		AuthCode:    originalOrder.AuthCode,   // 付款码
 		Title:       originalOrder.Title,      // 订单标题
 		TotalAmount: req.Order.TotalAmount,    // 订单总金额
-		OrderNo:     req.Order.RefundOrderNo,  // 订单编号
+		OrderNo:     req.Order.OrderNo,        // 订单编号
 		OperatorId:  originalOrder.OperatorId, // 商户操作员编号
 		TerminalId:  originalOrder.TerminalId, // 商户机具终端编号
 		LinkId:      originalOrder.Id,
