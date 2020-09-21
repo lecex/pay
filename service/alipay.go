@@ -1,8 +1,6 @@
 package service
 
 import (
-	"strconv"
-
 	"github.com/clbanning/mxj"
 	notifyPB "github.com/lecex/pay/proto/notify"
 	orderPB "github.com/lecex/pay/proto/order"
@@ -86,7 +84,7 @@ func (srv *Alipay) Refund(refundOrder *orderPB.Order, originalOrder *orderPB.Ord
 	request.BizContent = map[string]interface{}{
 		"out_trade_no":   originalOrder.OrderNo,
 		"out_request_no": refundOrder.OrderNo,
-		"refund_amount":  strconv.FormatInt(-refundOrder.TotalAmount, 10),
+		"refund_amount":  decimal.NewFromFloat(float64(-refundOrder.TotalAmount)).Div(decimal.NewFromFloat(float64(100))),
 	}
 	return srv.request(request)
 }

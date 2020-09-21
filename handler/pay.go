@@ -177,14 +177,16 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			}
 		}
 		if content["trade_status"] == "TRADE_CLOSED" || content["sub_code"] == "ACQ.TRADE_NOT_EXIST" { // 订单关闭状态
-			repoOrder.Fee = 0
-			repoOrder.Stauts = -1
-			res.Order.Stauts = CLOSED
-			err = srv.Repo.Update(repoOrder)
-			if err != nil {
-				res.Error.Code = "Query.Alipay.Update.Close"
-				res.Error.Detail = "支付失败,更新订单状态失败!"
-				log.Fatal(req, res, err)
+			if repoOrder.RefundFee == 0 { // 不存在退款时才可以关闭订单
+				repoOrder.Fee = 0
+				repoOrder.Stauts = -1
+				res.Order.Stauts = CLOSED
+				err = srv.Repo.Update(repoOrder)
+				if err != nil {
+					res.Error.Code = "Query.Alipay.Update.Close"
+					res.Error.Detail = "支付失败,更新订单状态失败!"
+					log.Fatal(req, res, err)
+				}
 			}
 		}
 		if content["sub_code"] != nil { // 返回错误代码
@@ -407,7 +409,7 @@ func (srv *Pay) Refund(ctx context.Context, req *pd.Request, res *pd.Response) (
 		res.Order.Method = originalOrder.Method
 		res.Valid = true
 	} else {
-		res.Content, err = srv.handerRefund(config, refundOrder, originalOrder)
+		res.Valid, res.Content, err = srv.handerRefund(config, refundOrder, originalOrder)
 	}
 	return nil
 }
@@ -439,64 +441,71 @@ func (srv *Pay) AffirmRefund(ctx context.Context, req *pd.Request, res *pd.Respo
 		log.Fatal(req, res, err)
 		return nil
 	}
-	res.Content, err = srv.handerRefund(config, refundOrder, originalOrder)
-	if err == nil {
-		res.Valid = true
-	}
+	res.Valid, res.Content, err = srv.handerRefund(config, refundOrder, originalOrder)
 	return
 }
 
 // handerRefund 处理退款
-func (srv *Pay) handerRefund(config *configPB.Config, refundOrder *orderPB.Order, originalOrder *orderPB.Order) (res string, err error) {
+func (srv *Pay) handerRefund(config *configPB.Config, refundOrder *orderPB.Order, originalOrder *orderPB.Order) (valid bool, res string, err error) {
 	switch refundOrder.Method {
 	case "alipay":
 		srv.newAlipayClient(config) //实例化连支付宝接
 		content, err := srv.Alipay.Refund(refundOrder, originalOrder)
 		if err != nil {
-			return res, err
+			return valid, res, err
 		}
 		if content["code"] == "10000" && content["msg"] == "Success" { // 订单关闭状态
 			err = srv.successOrder(refundOrder, config.Alipay.Fee)
 			if err != nil {
-				return res, err
+				return valid, res, err
 			}
 			originalOrder.RefundFee = originalOrder.RefundFee + (-refundOrder.TotalAmount) // 已有退款加正数退款
 			err = srv.Repo.Update(originalOrder)
 			if err != nil {
-				return res, err
+				return valid, res, err
+			}
+			valid = true
+		}
+		if content["sub_code"] == "ACQ.TRADE_HAS_CLOSE" || content["sub_code"] == "ACQ.TRADE_NOT_EXIST" { // 订单关闭状态
+			refundOrder.Fee = 0
+			refundOrder.Stauts = -1
+			err = srv.Repo.Update(refundOrder)
+			if err != nil {
+				return valid, res, err
 			}
 		}
 		c, err := content.Json()
 		if err != nil {
-			return res, err
+			return valid, res, err
 		}
 		res = string(c) //数据正常返回
-		return res, err
+		return valid, res, err
 	case "wechat":
 		srv.newWechatClient(config) //实例化连支付宝接
 		content, err := srv.Wechat.Refund(refundOrder, originalOrder)
 		if err != nil {
-			return res, err
+			return valid, res, err
 		}
 		if content["return_code"] == "SUCCESS" && content["result_code"] == "SUCCESS" { // 订单关闭状态
 			err = srv.successOrder(refundOrder, config.Wechat.Fee)
 			if err != nil {
-				return res, err
+				return valid, res, err
 			}
 			originalOrder.RefundFee = originalOrder.RefundFee + (-refundOrder.TotalAmount) // 已有退款加正数退款
 			err = srv.Repo.Update(originalOrder)
 			if err != nil {
-				return res, err
+				return valid, res, err
 			}
+			valid = true
 		}
 		c, err := content.Json()
 		if err != nil {
-			return res, err
+			return valid, res, err
 		}
 		res = string(c) //数据正常返回
-		return res, err
+		return valid, res, err
 	}
-	return res, err
+	return valid, res, err
 }
 
 // userConfig 用户配置
