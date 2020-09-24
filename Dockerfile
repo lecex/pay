@@ -12,3 +12,4 @@ RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
 COPY --from=builder /go/src/github.com/lecex/pay/bin/pay /usr/local/bin/
 CMD ["pay"]
+EXPOSE 8080
