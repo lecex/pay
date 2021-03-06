@@ -531,11 +531,11 @@ func (srv *Pay) userConfig(order *pd.Order) (*configPB.Config, error) {
 		config.Alipay.SysServiceProviderId = env.Getenv("PAY_ALIPAY_SYS_SERVICE_PROVIDERID", config.Alipay.SysServiceProviderId)
 	}
 	if config.Wechat.SubMchId != "" { // 子商户模式需要通过系统配置进行设置服务商信息
-		config.Wechat.AppId = env.Getenv("PAY_ALIPAY_APPID", config.Wechat.AppId)
-		config.Wechat.MchId = env.Getenv("PAY_ALIPAY_MCHID", config.Wechat.MchId)
-		config.Wechat.ApiKey = env.Getenv("PAY_ALIPAY_APIKEY", config.Wechat.ApiKey)
-		config.Wechat.PemCert = env.Getenv("PAY_ALIPAY_PEMCERT", config.Wechat.PemCert)
-		config.Wechat.PemKey = env.Getenv("PAY_ALIPAY_PEMKEY", config.Wechat.PemKey)
+		config.Wechat.AppId = env.Getenv("PAY_WECHAT_APPID", config.Wechat.AppId)
+		config.Wechat.MchId = env.Getenv("PAY_WECHAT_MCHID", config.Wechat.MchId)
+		config.Wechat.ApiKey = env.Getenv("PAY_WECHAT_APIKEY", config.Wechat.ApiKey)
+		config.Wechat.PemCert = env.Getenv("PAY_WECHAT_PEMCERT", config.Wechat.PemCert)
+		config.Wechat.PemKey = env.Getenv("PAY_WECHAT_PEMKEY", config.Wechat.PemKey)
 	}
 	return config, err
 }
