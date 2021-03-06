@@ -522,15 +522,15 @@ func (srv *Pay) userConfig(order *pd.Order) (*configPB.Config, error) {
 	if err != nil {
 		return config, err
 	}
-	order.StoreId = config.Id //修复商家用户名支付时无法获取商家id问题
-	if config.Alipay.AppAuthToken != "" {
+	order.StoreId = config.Id             //修复商家用户名支付时无法获取商家id问题
+	if config.Alipay.AppAuthToken != "" { // 子商户模式需要通过系统配置进行设置服务商信息
 		config.Alipay.AppId = env.Getenv("PAY_ALIPAY_APPID", config.Alipay.AppId)
 		config.Alipay.PrivateKey = env.Getenv("PAY_ALIPAY_PRIVATE_KEY", config.Alipay.PrivateKey)
 		config.Alipay.AliPayPublicKey = env.Getenv("PAY_ALIPAY_ALIPAY_PUBLIC_KEY", config.Alipay.AliPayPublicKey)
 		config.Alipay.SignType = env.Getenv("PAY_ALIPAY_SIGN_TYPE", config.Alipay.SignType)
 		config.Alipay.SysServiceProviderId = env.Getenv("PAY_ALIPAY_SYS_SERVICE_PROVIDERID", config.Alipay.SysServiceProviderId)
 	}
-	if config.Wechat.SubMchId != "" {
+	if config.Wechat.SubMchId != "" { // 子商户模式需要通过系统配置进行设置服务商信息
 		config.Wechat.AppId = env.Getenv("PAY_ALIPAY_APPID", config.Wechat.AppId)
 		config.Wechat.MchId = env.Getenv("PAY_ALIPAY_MCHID", config.Wechat.MchId)
 		config.Wechat.ApiKey = env.Getenv("PAY_ALIPAY_APIKEY", config.Wechat.ApiKey)
