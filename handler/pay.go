@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
+	"github.com/lecex/core/env"
 	"github.com/lecex/core/uitl"
 	configPB "github.com/lecex/pay/proto/config"
 	orderPB "github.com/lecex/pay/proto/order"
@@ -522,6 +523,20 @@ func (srv *Pay) userConfig(order *pd.Order) (*configPB.Config, error) {
 		return config, err
 	}
 	order.StoreId = config.Id //修复商家用户名支付时无法获取商家id问题
+	if config.Alipay.AppAuthToken != "" {
+		config.Alipay.AppId = env.Getenv("PAY_ALIPAY_APPID", config.Alipay.AppId)
+		config.Alipay.PrivateKey = env.Getenv("PAY_ALIPAY_PRIVATE_KEY", config.Alipay.PrivateKey)
+		config.Alipay.AliPayPublicKey = env.Getenv("PAY_ALIPAY_ALIPAY_PUBLIC_KEY", config.Alipay.AliPayPublicKey)
+		config.Alipay.SignType = env.Getenv("PAY_ALIPAY_SIGN_TYPE", config.Alipay.SignType)
+		config.Alipay.SysServiceProviderId = env.Getenv("PAY_ALIPAY_SYS_SERVICE_PROVIDERID", config.Alipay.SysServiceProviderId)
+	}
+	if config.Wechat.SubMchId != "" {
+		config.Wechat.AppId = env.Getenv("PAY_ALIPAY_APPID", config.Wechat.AppId)
+		config.Wechat.MchId = env.Getenv("PAY_ALIPAY_MCHID", config.Wechat.MchId)
+		config.Wechat.ApiKey = env.Getenv("PAY_ALIPAY_APIKEY", config.Wechat.ApiKey)
+		config.Wechat.PemCert = env.Getenv("PAY_ALIPAY_PEMCERT", config.Wechat.PemCert)
+		config.Wechat.PemKey = env.Getenv("PAY_ALIPAY_PEMKEY", config.Wechat.PemKey)
+	}
 	return config, err
 }
 
