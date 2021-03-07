@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"time"
 
@@ -537,7 +536,6 @@ func (srv *Pay) userConfig(order *pd.Order) (*configPB.Config, error) {
 		config.Wechat.ApiKey = env.Getenv("PAY_WECHAT_APIKEY", config.Wechat.ApiKey)
 		config.Wechat.PemCert = env.Getenv("PAY_WECHAT_PEMCERT", config.Wechat.PemCert)
 		config.Wechat.PemKey = env.Getenv("PAY_WECHAT_PEMKEY", config.Wechat.PemKey)
-		fmt.Println(config, env.Getenv("PAY_WECHAT_MCHID", ""))
 	}
 	return config, err
 }
