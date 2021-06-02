@@ -130,6 +130,11 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		return nil
 	}
 	repoOrder, err := srv.getOrder(req.Order) //创建订单返回订单ID
+	if repoOrder.RefundFee == repoOrder.TotalAmount {
+		res.Error.Code = "Query.RefundFee"
+		res.Error.Detail = "订单已退款不支持再次查询"
+		log.Fatal(req, res, err)
+	}
 	if err != nil {
 		res.Order.Stauts = CLOSED
 		res.Error.Code = "Query.GetOrder"
@@ -247,7 +252,6 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 			res.Error.Code = "Query.Wechat.ReturnCode"
 			res.Error.Detail = content["return_msg"].(string)
 		}
-		log.Fatal("Query.Wechat", req, res, err)
 		return nil
 	}
 	return nil

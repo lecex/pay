@@ -25,7 +25,7 @@ func init() {
 		// User 用户名
 		User: env.Getenv("DB_USER", "root"),
 		// Password 密码
-		Password: env.Getenv("DB_PASSWORD", "root"),
+		Password: env.Getenv("DB_PASSWORD", "123456"),
 		// DbName 数据库名称
 		DbName: env.Getenv("DB_NAME", "pay"),
 		// Charset 数据库编码
