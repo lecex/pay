@@ -134,6 +134,7 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		res.Error.Code = "Query.RefundFee"
 		res.Error.Detail = "订单已退款不支持再次查询"
 		log.Fatal(req, res, err)
+		return nil
 	}
 	if err != nil {
 		res.Order.Stauts = CLOSED
