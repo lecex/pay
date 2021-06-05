@@ -25,6 +25,7 @@ func main() {
 	}
 	h.Register()
 	// Run the server
+	log.Fatal("serviser run ... Version:" + Conf.Version)
 	if err := service.Run(); err != nil {
 		log.Fatal(err)
 	}
