@@ -6,7 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/micro/go-micro/v2/util/log"
 
-	"github.com/lecex/core/uitl"
+	"github.com/lecex/core/util"
 	pb "github.com/lecex/pay/proto/config"
 )
 
@@ -29,8 +29,8 @@ type ConfigRepository struct {
 // List 获取所有配置信息
 func (repo *ConfigRepository) List(req *pb.ListQuery) (configs []*pb.Config, err error) {
 	db := repo.DB
-	limit, offset := uitl.Page(req.Limit, req.Page) // 分页
-	sort := uitl.Sort(req.Sort)                     // 排序 默认 created_at desc
+	limit, offset := util.Page(req.Limit, req.Page) // 分页
+	sort := util.Sort(req.Sort)                     // 排序 默认 created_at desc
 	// 查询条件
 	if err := db.Where(req.Where).Order(sort).Limit(limit).Offset(offset).Find(&configs).Error; err != nil {
 		log.Log(err)

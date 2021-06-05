@@ -1,4 +1,4 @@
-package uitl
+package util
 
 import (
 	"strings"

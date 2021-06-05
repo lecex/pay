@@ -7,7 +7,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/lecex/core/env"
-	"github.com/lecex/core/uitl"
+	"github.com/lecex/core/util"
 	configPB "github.com/lecex/pay/proto/config"
 	orderPB "github.com/lecex/pay/proto/order"
 	pd "github.com/lecex/pay/proto/pay"
@@ -283,7 +283,7 @@ func (srv *Pay) Cancel(ctx context.Context, req *pd.Request, res *pd.Response) (
 		log.Fatal(req, res, err)
 		return nil
 	}
-	if uitl.GetZeroTime(createdAt) != uitl.GetZeroTime(time.Now()) {
+	if util.GetZeroTime(createdAt) != util.GetZeroTime(time.Now()) {
 		res.Error.Code = "Cancel.createdAt.Not.SameDay"
 		res.Error.Detail = "只能撤销当天订单"
 		log.Fatal(req, res, err)

@@ -6,7 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/micro/go-micro/v2/util/log"
 
-	"github.com/lecex/core/uitl"
+	"github.com/lecex/core/util"
 	pb "github.com/lecex/pay/proto/order"
 )
 
@@ -60,8 +60,8 @@ func (repo *OrderRepository) Fee(req *pb.ListQuery) (total int64, err error) {
 // List 获取所有订单信息
 func (repo *OrderRepository) List(req *pb.ListQuery) (orders []*pb.Order, err error) {
 	db := repo.DB
-	limit, offset := uitl.Page(req.Limit, req.Page) // 分页
-	sort := uitl.Sort(req.Sort)                     // 排序 默认 created_at desc
+	limit, offset := util.Page(req.Limit, req.Page) // 分页
+	sort := util.Sort(req.Sort)                     // 排序 默认 created_at desc
 	// 查询条件
 	if err := db.Where(req.Where).Order(sort).Limit(limit).Offset(offset).Find(&orders).Error; err != nil {
 		log.Log(err)

@@ -12,7 +12,7 @@ import (
 	orderPB "github.com/lecex/pay/proto/order"
 	"github.com/lecex/pay/service"
 	"github.com/lecex/pay/service/repository"
-	"github.com/lecex/pay/uitl"
+	"github.com/lecex/pay/util"
 )
 
 // Notify 订单
@@ -35,12 +35,12 @@ func (srv *Notify) UserConfig(order *orderPB.Order) (*configPB.Config, error) {
 
 // Alipay 异步通知
 func (srv *Notify) Alipay(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
-	OrderNo := uitl.Get(req, "out_trade_no")
+	OrderNo := util.Get(req, "out_trade_no")
 	if OrderNo == "" {
 		return fmt.Errorf("out_trade_no no content")
 	}
 	order := &orderPB.Order{
-		OrderNo: uitl.Get(req, "out_trade_no"), // 订单编号
+		OrderNo: util.Get(req, "out_trade_no"), // 订单编号
 	}
 	if err = srv.Repo.Get(order); err != nil {
 		return err
