@@ -126,10 +126,10 @@ func (repo *OrderRepository) Update(order *pb.Order) error {
 
 // Delete 删除订单
 func (repo *OrderRepository) Delete(order *pb.Order) (bool, error) {
-	id := &pb.Order{
-		Id: order.Id,
+	if order.Id == "" {
+		return false, fmt.Errorf("请传入更新id")
 	}
-	err := repo.DB.Delete(id).Error
+	err := repo.DB.Where("id = ?", order.Id).Delete(order).Error
 	if err != nil {
 		log.Log(err)
 		return false, err
