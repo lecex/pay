@@ -58,6 +58,8 @@ func (srv *Wechat) AopF2F(order *proto.Order) (req mxj.Map, err error) {
 		"out_trade_no":     order.OrderNo,
 		"total_fee":        strconv.FormatInt(order.TotalAmount, 10),
 		"spbill_create_ip": "127.0.0.1",
+		"time_start":       time.Now().Format("20060102150405"),                      // 当前时间
+		"time_expire":      time.Now().Add(time.Minute * 2).Format("20060102150405"), // 二分钟后结束
 	}
 	// 请求
 	return srv.request(request)
