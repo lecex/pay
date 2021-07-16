@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	configPB "github.com/lecex/pay/proto/config"
@@ -129,5 +130,14 @@ func TestAffirmRefund(t *testing.T) {
 	err := h.AffirmRefund(context.TODO(), req, res)
 	// fmt.Println(req, res, err)
 	t.Log("TestAffirmRefund", req, res, err)
+
+}
+
+func TestDD(t *testing.T) {
+	alipay := "283971647685282846"
+	wechat := "136731678237198135"
+	fmt.Println(regexp.Match(`^(?:2[5-9]|30)\d{14,18}$`, []byte(alipay)))
+	fmt.Println(regexp.Match(`^1[0-5]\d{16}$`, []byte(wechat)))
+	fmt.Println(456, alipay, wechat)
 
 }

@@ -24,6 +24,8 @@ func config() {
 			store_name varchar(64) DEFAULT NULL COMMENT '商户名',
 			alipay_id int(11) DEFAULT 0 COMMENT '支付宝配置ID',
 			wechat_id int(11) DEFAULT 0 COMMENT '微信配置ID',
+			icbc_id int(11) DEFAULT 0 COMMENT '工行配置ID',
+			channel string(16) DEFAULT 0 COMMENT '默认支付通道',
 			stauts int(11) DEFAULT 1 COMMENT '商品状态(禁用0、启用1)',
 			created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -69,6 +71,27 @@ func wechat() {
 			sub_mch_id varchar(255) DEFAULT NULL COMMENT '子商家ID',
 			pem_cert text DEFAULT NULL COMMENT 'pem证书',
 			pem_key text DEFAULT NULL COMMENT 'pem秘钥',
+			fee int(11) DEFAULT 0 COMMENT '手续费单位万分之一',
+			sandbox int(11) DEFAULT 0 COMMENT '沙盒模式(禁用0、启用1)',
+			PRIMARY KEY (id)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+		`)
+	}
+}
+
+// icbc 商品分类数据迁移
+func icbc() {
+	icbc := &configPB.Icbc{}
+	if !db.DB.HasTable(&icbc) {
+		db.DB.Exec(`
+			CREATE TABLE icbcs (
+			id int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+			app_id varchar(255) DEFAULT NULL COMMENT '应用ID',
+			private_key text DEFAULT NULL COMMENT '私钥',
+			icbc_public_key text DEFAULT NULL COMMENT '工行公钥',
+			sign_type varchar(255) DEFAULT NULL COMMENT '发送加密方式',
+			return_sign_type varchar(255) DEFAULT NULL COMMENT '接受加密方式',
+			mer_id varchar(255) DEFAULT NULL COMMENT '子商户ID',
 			fee int(11) DEFAULT 0 COMMENT '手续费单位万分之一',
 			sandbox int(11) DEFAULT 0 COMMENT '沙盒模式(禁用0、启用1)',
 			PRIMARY KEY (id)

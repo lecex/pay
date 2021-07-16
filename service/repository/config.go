@@ -112,6 +112,11 @@ func (repo *ConfigRepository) Delete(config *pb.Config) (valid bool, err error) 
 		log.Log(err)
 		return false, err
 	}
+	err = repo.DB.Delete(config.Icbc).Error // 删除关联
+	if err != nil {
+		log.Log(err)
+		return false, err
+	}
 	return true, nil
 }
 
@@ -119,17 +124,24 @@ func (repo *ConfigRepository) Delete(config *pb.Config) (valid bool, err error) 
 func (repo *ConfigRepository) Related(config *pb.Config) error {
 	Alipay := &pb.Alipay{}
 	if err := repo.DB.Model(&config).Related(Alipay).Error; err != nil {
-		if err.Error() != "record not found" {
+		if err.Error() != "record not found Alipay" {
 			return err
 		}
 	}
 	Wechat := &pb.Wechat{}
 	if err := repo.DB.Model(&config).Related(Wechat).Error; err != nil {
-		if err.Error() != "record not found" {
+		if err.Error() != "record not found Wechat" {
+			return err
+		}
+	}
+	Icbc := &pb.Icbc{}
+	if err := repo.DB.Model(&config).Related(Icbc).Error; err != nil {
+		if err.Error() != "record not found Icbc" {
 			return err
 		}
 	}
 	config.Alipay = Alipay
 	config.Wechat = Wechat
+	config.Icbc = Icbc
 	return nil
 }
