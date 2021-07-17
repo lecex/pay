@@ -12,6 +12,7 @@ func init() {
 	order()
 	alipay()
 	wechat()
+	icbc()
 }
 
 // config 用户数据迁移
@@ -25,7 +26,7 @@ func config() {
 			alipay_id int(11) DEFAULT 0 COMMENT '支付宝配置ID',
 			wechat_id int(11) DEFAULT 0 COMMENT '微信配置ID',
 			icbc_id int(11) DEFAULT 0 COMMENT '工行配置ID',
-			channel string(16) DEFAULT 0 COMMENT '默认支付通道',
+			channel varchar(16) DEFAULT 0 COMMENT '默认支付通道',
 			stauts int(11) DEFAULT 1 COMMENT '商品状态(禁用0、启用1)',
 			created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -108,7 +109,7 @@ func order() {
 			CREATE TABLE orders (
 			id varchar(36) NOT NULL COMMENT '订单ID',
 			store_id varchar(128) DEFAULT NULL COMMENT '商家ID',
-			method varchar(36) DEFAULT NULL COMMENT '付款方式 [支付宝、微信、银联等]',
+			method varchar(36) DEFAULT NULL COMMENT '付款方式 [支付宝、微信、工行、银联等]',
 			auth_code varchar(36) DEFAULT NULL COMMENT '付款码',
 			title varchar(128) DEFAULT NULL COMMENT '订单标题',
 			total_amount int(16) DEFAULT NULL COMMENT '订单总金额',

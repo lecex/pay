@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"regexp"
+	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/lecex/core/env"
@@ -20,9 +21,9 @@ import (
 // SUCCESS 付款成功
 // CLOSED 订单关闭
 const (
+	CLOSED     = "CLOSED"     // -1
 	USERPAYING = "USERPAYING" // 0
 	SUCCESS    = "SUCCESS"    // 1
-	CLOSED     = "CLOSED"     // -1
 )
 
 // Pay 支付结构
@@ -37,6 +38,18 @@ type Pay struct {
 // AopF2F 商家扫用户付款码
 // https://pay.weixin.qq.com/wiki/doc/api/micropay.php?chapter=9_10&index=1
 func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
+	if req.Order.AuthCode == "" {
+		return errors.New("付款码不允许为空")
+	}
+	if req.Order.Title == "" {
+		return errors.New("订单标题不允许为空")
+	}
+	if req.Order.TotalAmount <= 0 {
+		return errors.New("订单金额不允许小于1")
+	}
+	if req.Order.OrderNo == "" {
+		return errors.New("订单编号不允许为空")
+	}
 	res.Error = &pd.Error{}
 	config, err := srv.userConfig(req.Order)
 	if err != nil {
@@ -67,6 +80,12 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 		log.Fatal(req, res, err)
 		return nil
 	}
+	if repoOrder.Method != req.Order.Method {
+		res.Error.Code = "AopF2F.handerOrder.Method"
+		res.Error.Detail = "请求支付通道方式和系统已存在订单不符"
+		log.Fatal(req, res)
+		return nil
+	}
 	res.Order = req.Order
 	switch req.Order.Method {
 	case "alipay":
@@ -78,7 +97,7 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 			log.Fatal(req, res, err)
 			return nil
 		}
-		if content["code"] == "10000" { // 返回状态码
+		if content["code"] == "10000" && content["msg"] == "Success" { // 返回状态码
 			res.Valid = true
 			res.Order.Stauts = SUCCESS
 			err = srv.successOrder(repoOrder, config.Icbc.Fee)
@@ -171,9 +190,13 @@ func (srv *Pay) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (
 // Query 支付查询
 // https://pay.weixin.qq.com/wiki/doc/api/micropay.php?chapter=9_2
 func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
+	if req.Order.OrderNo == "" {
+		res.Error.Code = "Query.OrderNo.Empty"
+		res.Error.Detail = "查询订单不允许为空"
+		log.Fatal(req, res, err)
+		return nil
+	}
 	res.Error = &pd.Error{}
-	res.Order = req.Order
-	res.Order.Stauts = USERPAYING // 订单状态默认待付款
 	config, err := srv.userConfig(req.Order)
 	if err != nil {
 		res.Error.Code = "Query.userConfig"
@@ -181,7 +204,25 @@ func (srv *Pay) Query(ctx context.Context, req *pd.Request, res *pd.Response) (e
 		log.Fatal(req, res, err)
 		return nil
 	}
+	res.Order = req.Order
 	repoOrder, err := srv.getOrder(req.Order) //创建订单返回订单ID
+	switch repoOrder.Stauts {
+	case -1:
+		res.Order.Stauts = CLOSED // 订单状态默认待付款
+	case 0:
+		res.Order.Stauts = USERPAYING // 订单状态默认待付款
+	case 1:
+		res.Order.Stauts = SUCCESS // 订单状态默认待付款
+	}
+	res.Order.StoreId = repoOrder.StoreId
+	res.Order.Method = repoOrder.Method
+	res.Order.AuthCode = repoOrder.AuthCode
+	res.Order.Title = repoOrder.Title
+	res.Order.TotalAmount = repoOrder.TotalAmount
+	res.Order.OrderNo = repoOrder.OrderNo
+	res.Order.OperatorId = repoOrder.OperatorId
+	res.Order.TerminalId = repoOrder.TerminalId
+	res.Order.RefundFee = repoOrder.RefundFee
 	if repoOrder.RefundFee == repoOrder.TotalAmount {
 		res.Error.Code = "Query.RefundFee"
 		res.Error.Detail = "订单已退款不支持再次查询"
@@ -367,6 +408,7 @@ func (srv *Pay) RefundQuery(ctx context.Context, req *pd.Request, res *pd.Respon
 func (srv *Pay) Refund(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
 	res.Error = &pd.Error{}
 	config, err := srv.userConfig(req.Order) // 获取配置同时根据商家名称赋值商家id
+	req.Order.Method = ""                    // 退款取消默认通道以数据库订单为准
 	if err != nil {
 		res.Error.Code = "Refund.userConfig"
 		res.Error.Detail = "退款是支付配置信息查询失败"
@@ -390,7 +432,7 @@ func (srv *Pay) Refund(ctx context.Context, req *pd.Request, res *pd.Response) (
 		log.Fatal(req, originalOrder)
 		return nil
 	}
-	if req.Order.RefundFee > (originalOrder.TotalAmount - originalOrder.RefundFee) {
+	if req.Order.RefundFee >= (originalOrder.TotalAmount - originalOrder.RefundFee) {
 		res.Error.Code = "Refund.RefundFee"
 		res.Error.Detail = "退款金额大于可退款金额"
 		log.Fatal(req, originalOrder)
@@ -403,7 +445,7 @@ func (srv *Pay) Refund(ctx context.Context, req *pd.Request, res *pd.Response) (
 		req.Order.TotalAmount = -req.Order.RefundFee // 退款改为负数金额
 	}
 	if req.Order.OrderNo == "" {
-		req.Order.OrderNo = originalOrder.OrderNo + "_Q" // 全额退款编号自动构建
+		req.Order.OrderNo = originalOrder.OrderNo + "_" + time.Now().Format("0102150405") // 全额退款编号自动构建
 	}
 	refundOrder, err := srv.handerOrder(&orderPB.Order{
 		StoreId:     originalOrder.StoreId,    // 商户门店编号 收款账号ID userID
@@ -547,6 +589,9 @@ func (srv *Pay) handerRefund(config *configPB.Config, refundOrder *orderPB.Order
 
 // userConfig 用户配置
 func (srv *Pay) userConfig(order *pd.Order) (*configPB.Config, error) {
+	if order.StoreId == "" && order.StoreName == "" {
+		return nil, errors.New("StoreName,StoreId 必须包含一个")
+	}
 	config := &configPB.Config{}
 	if order.StoreId != "" {
 		config.Id = order.StoreId

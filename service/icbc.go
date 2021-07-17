@@ -32,10 +32,9 @@ func (srv *Icbc) NewClient(config map[string]string) {
 
 // Query 支付查询
 func (srv *Icbc) Query(order *proto.Order) (req mxj.Map, err error) {
-	c := srv.Client.Config
-	c.ApiName = "pay.orderquery"
 	// 配置参数
 	request := requests.NewCommonRequest()
+	request.ApiName = "pay.orderquery"
 	request.BizContent = map[string]interface{}{
 		"mer_id":       srv.config["MerId"],
 		"out_trade_no": order.OrderNo,
@@ -46,10 +45,9 @@ func (srv *Icbc) Query(order *proto.Order) (req mxj.Map, err error) {
 // AopF2F 商家扫用户付款码
 //    文档地址：https://docs.open.icbc.com/api_1/icbc.trade.pay
 func (srv *Icbc) AopF2F(order *proto.Order) (req mxj.Map, err error) {
-	c := srv.Client.Config
-	c.ApiName = "pay.pay"
 	// 配置参数
 	request := requests.NewCommonRequest()
+	request.ApiName = "pay.pay"
 	request.BizContent = map[string]interface{}{
 		"mer_id":       srv.config["MerId"],
 		"qr_code":      order.AuthCode,
@@ -64,15 +62,27 @@ func (srv *Icbc) AopF2F(order *proto.Order) (req mxj.Map, err error) {
 // Refund 交易退款
 //    文档地址：https://opendocs.icbc.com/apis/api_1/icbc.trade.refund/
 func (srv *Icbc) Refund(refundOrder *orderPB.Order, originalOrder *orderPB.Order) (req mxj.Map, err error) {
-	c := srv.Client.Config
-	c.ApiName = "pay.refund"
 	// 配置参数
 	request := requests.NewCommonRequest()
+	request.ApiName = "pay.refund"
 	request.BizContent = map[string]interface{}{
-		"mer_id":        srv.config["MerId"],
-		"out_trade_no":  originalOrder.OrderNo,
-		"reject_no":     refundOrder.OrderNo,
-		"refund_amount": strconv.FormatInt(refundOrder.TotalAmount, 10),
+		"mer_id":       srv.config["MerId"],
+		"out_trade_no": originalOrder.OrderNo,
+		"reject_no":    refundOrder.OrderNo,
+		"reject_amt":   strconv.FormatInt(-refundOrder.TotalAmount, 10),
+	}
+	return srv.request(request)
+}
+
+// Query 支付查询
+func (srv *Icbc) RefundQuery(order *proto.Order) (req mxj.Map, err error) {
+	// 配置参数
+	request := requests.NewCommonRequest()
+	request.ApiName = "pay.refundquery"
+	request.BizContent = map[string]interface{}{
+		"mer_id":       srv.config["MerId"],
+		"out_trade_no": order.OrderNo,
+		"reject_no":    "", //debug
 	}
 	return srv.request(request)
 }
