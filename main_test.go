@@ -86,9 +86,9 @@ func TestAopF2FWechat(t *testing.T) {
 		Order: &payPB.Order{
 			StoreName:   `ceshi`,
 			Method:      `icbc`,
-			AuthCode:    `286203470917515029`,
+			AuthCode:    `136514469045151336`,
 			Title:       `IcbcAlipay扫码支付`,
-			OrderNo:     `GTZ202001011753431459022`,
+			OrderNo:     `GTZ202001011753431459023`,
 			TotalAmount: 1,
 		},
 	}
@@ -110,7 +110,7 @@ func TestQuery(t *testing.T) {
 	req := &payPB.Request{
 		Order: &payPB.Order{
 			StoreName: `ceshi`,
-			OrderNo:   `GTZ202001011753431459022`,
+			OrderNo:   `GTZ202001011753431459023`,
 		},
 	}
 	res := &payPB.Response{}
@@ -131,12 +131,12 @@ func TestRefund(t *testing.T) {
 	req := &payPB.Request{
 		Order: &payPB.Order{
 			StoreName:       `ceshi`,
-			OriginalOrderNo: `GTZ202001011753431459022`,
+			OriginalOrderNo: `GTZ202001011753431459023`,
 		},
 	}
 	res := &payPB.Response{}
 	err := h.Refund(context.TODO(), req, res)
-	fmt.Println("TestRefund_____", req, res, err)
+	fmt.Println("TestRefund_____", res, err)
 	t.Log("TestAffirmRefund", req, res, err)
 
 }
