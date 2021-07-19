@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"regexp"
 
@@ -43,16 +44,24 @@ type Trade struct {
 // https://pay.weixin.qq.com/wiki/doc/api/micropay.php?chapter=9_10&index=1
 func (srv *Trade) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
 	if req.BizContent.AuthCode == "" {
-		return errors.New("付款码不允许为空:BizContent.AuthCode")
+		res.Content.ReturnCode = "AopF2F.AuthCode.Not"
+		res.Content.ReturnMsg = "付款码不允许为空:BizContent.AuthCode"
+		return
 	}
 	if req.BizContent.Title == "" {
-		return errors.New("订单标题不允许为空:BizContent.Title")
+		res.Content.ReturnCode = "AopF2F.Title.Not"
+		res.Content.ReturnMsg = "订单标题不允许为空:BizContent.Title"
+		return
 	}
 	if req.BizContent.TotalFee <= 0 {
-		return errors.New("订单金额不允许小于1:BizContent.TotalFee")
+		res.Content.ReturnCode = "AopF2F.TotalFee.Not"
+		res.Content.ReturnMsg = "订单金额不允许小于1:BizContent.TotalFee"
+		return
 	}
 	if req.BizContent.OutTradeNo == "" {
-		return errors.New("订单编号不允许为空:BizContent.OutTradeNo")
+		res.Content.ReturnCode = "AopF2F.OutTradeNo.Not"
+		res.Content.ReturnMsg = "订单编号不允许为空:BizContent.OutTradeNo"
+		return
 	}
 	err = srv.userConfig(req)
 	if err != nil {
@@ -117,111 +126,70 @@ func (srv *Trade) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response)
 // // Query 支付查询
 // // https://pay.weixin.qq.com/wiki/doc/api/micropay.php?chapter=9_2
 func (srv *Trade) Query(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
-	// 	if req.BizContent.OrderNo == "" {
-	// 		res.Error.Code = "Query.OrderNo.Empty"
-	// 		res.Error.Detail = "查询订单不允许为空"
-	// 		log.Fatal(req, res, err)
-	// 		return nil
-	// 	}
-	// 	res.Error = &pd.Error{}
-	// 	config, err := srv.userConfig(req.BizContent)
-	// 	if err != nil {
-	// 		res.Error.Code = "Query.userConfig"
-	// 		res.Error.Detail = "查询配置信息失败"
-	// 		log.Fatal(req, res, err)
-	// 		return nil
-	// 	}
-	// 	res.Order = req.BizContent
-	// 	repoOrder, err := srv.getOrder(req.BizContent) //创建订单返回订单ID
-	// 	switch repoOrder.Status {
-	// 	case -1:
-	// 		res.Order.Status = CLOSED // 订单状态默认待付款
-	// 	case 0:
-	// 		res.Order.Status = USERPAYING // 订单状态默认待付款
-	// 	case 1:
-	// 		res.Order.Status = SUCCESS // 订单状态默认待付款
-	// 	}
-	// 	res.Order.StoreId = repoOrder.StoreId
-	// 	res.Order.Method = repoOrder.Method
-	// 	res.Order.AuthCode = repoOrder.AuthCode
-	// 	res.Order.Title = repoOrder.Title
-	// 	res.Order.TotalAmount = repoOrder.TotalAmount
-	// 	res.Order.OrderNo = repoOrder.OrderNo
-	// 	res.Order.OperatorId = repoOrder.OperatorId
-	// 	res.Order.TerminalId = repoOrder.TerminalId
-	// 	res.Order.RefundFee = repoOrder.RefundFee
-	// 	if repoOrder.RefundFee == repoOrder.TotalAmount {
-	// 		res.Error.Code = "Query.RefundFee"
-	// 		res.Error.Detail = "订单已退款不支持再次查询"
-	// 		log.Fatal(req, res, err)
-	// 		return nil
-	// 	}
-	// 	if err != nil {
-	// 		res.Order.Status = CLOSED
-	// 		res.Error.Code = "Query.GetOrder"
-	// 		res.Error.Detail = "获取订单失败"
-	// 		log.Fatal(req, res, err)
-	// 		return nil
-	// 	}
-	// 	if repoOrder.TotalAmount < 0 { // 退款查询时不进行是不进行实际查询等待系统自动结果
-	// 		res.Order.Method = repoOrder.Method
-	// 		switch repoOrder.Status {
-	// 		case -1:
-	// 			res.Order.Status = CLOSED
-	// 		case 0:
-	// 			res.Order.Status = USERPAYING
-	// 		case 1:
-	// 			res.Order.Status = SUCCESS
-	// 		}
-	// 		return nil
-	// 	}
-	// 	switch repoOrder.Method {
-	// 	case "alipay":
-	// 		srv.newAlipayClient(config) //实例化支付宝连接
-	// 		content, err := srv.Alipay.Query(req.BizContent)
-	// 		if err != nil {
-	// 			res.Error.Code = "Query.Alipay.Error"
-	// 			res.Error.Detail = err.Error()
-	// 			log.Fatal(req, res, err)
-	// 			return nil
-	// 		}
-	// 		c, err := content.Json()
-	// 		if err != nil {
-	// 			res.Error.Code = "Query.Alipay.Mxj"
-	// 			res.Error.Detail = "支付宝返回数据解析失败"
-	// 			log.Fatal(req, res, err)
-	// 			return nil
-	// 		}
-	// 		res.Content = string(c)                                                                                                                                       //数据正常返回
-	// 		if (content["trade_status"] == "TRADE_SUCCESS" || content["trade_status"] == "TRADE_FINISHED") && content["code"] == "10000" && content["msg"] == "Success" { // 订单成功状态
-	// 			res.Valid = true
-	// 			res.Order.Status = SUCCESS
-	// 			err = srv.successOrder(repoOrder, config.Alipay.Fee)
-	// 			if err != nil {
-	// 				res.Error.Code = "Query.Alipay.Update.Success"
-	// 				res.Error.Detail = "支付成功,更新订单状态失败!"
-	// 				log.Fatal(req, res, err)
-	// 			}
-	// 		}
-	// 		if content["trade_status"] == "TRADE_CLOSED" || content["sub_code"] == "ACQ.TRADE_NOT_EXIST" { // 订单关闭状态
-	// 			if repoOrder.RefundFee == 0 { // 不存在退款时才可以关闭订单
-	// 				repoOrder.Fee = 0
-	// 				repoOrder.Status = -1
-	// 				res.Order.Status = CLOSED
-	// 				err = srv.Repo.Update(repoOrder)
-	// 				if err != nil {
-	// 					res.Error.Code = "Query.Alipay.Update.Close"
-	// 					res.Error.Detail = "支付失败,更新订单状态失败!"
-	// 					log.Fatal(req, res, err)
-	// 				}
-	// 			}
-	// 		}
-	// 		if content["sub_code"] != nil { // 返回错误代码
-	// 			res.Error.Code = content["sub_code"].(string)
-	// 			res.Error.Detail = content["sub_msg"].(string)
-	// 		}
-	// 		log.Fatal("Query.Alipay", req, res, err)
-	// 		return nil
+	if req.BizContent.OutTradeNo == "" {
+		res.Content.ReturnCode = "AopF2F.OutTradeNo.Not"
+		res.Content.ReturnMsg = "订单编号不允许为空:BizContent.OutTradeNo"
+		return
+	}
+	err = srv.userConfig(req)
+	if err != nil {
+		res.Content.ReturnCode = "AopF2F.userConfig"
+		res.Content.ReturnMsg = "查询商户支付配置信息失败"
+		log.Fatal(req, res, err)
+		return nil
+	}
+	// 初始化回参
+	res.Content = &pd.Content{}
+	repoOrder, err := srv.getOrder(req) //
+	if err != nil {
+		res.Content.Status = CLOSED
+		res.Content.ReturnCode = "Query.GetOrder"
+		res.Content.ReturnMsg = "获取订单失败"
+		log.Fatal(req, res, err)
+		return nil
+	}
+
+	if repoOrder.TotalFee < 0 { // 退款查询时不进行是不进行实际查询等待系统自动结果
+		res.Content.ReturnCode = "AopF2F.Return.Order"
+		res.Content.ReturnMsg = "退款订单请使用退款查询接口"
+		log.Fatal(req, res, err)
+		return nil
+	}
+	res.Content.Channel = repoOrder.Channel
+	res.Content.OutTradeNo = repoOrder.OutTradeNo
+	res.Content.TradeNo = repoOrder.TradeNo
+	res.Content.TotalFee = repoOrder.TotalFee
+	res.Content.RefundFee = repoOrder.RefundFee
+	switch repoOrder.Status {
+	case -1:
+		res.Content.Status = CLOSED // 订单状态默认待付款
+	case 0:
+		res.Content.Status = USERPAYING // 订单状态默认待付款
+	case 1:
+		res.Content.Status = SUCCESS // 订单状态默认待付款
+	}
+
+	// debug 查询
+	// if repoOrder.RefundFee == repoOrder.TotalFee {
+	// 	res.Content.ReturnCode = "Query.RefundFee.Not.TotalFee"
+	// 	res.Content.ReturnMsg = "订单已退款不支持再次查询"
+	// 	log.Fatal(req, res, err)
+	// 	return nil
+	// }
+
+	content := mxj.New()
+	switch repoOrder.Channel {
+	case "alipay":
+		srv.newAlipayClient() //实例化支付宝连接
+		content, err = srv.Alipay.Query(req.BizContent)
+	case "wechat":
+		srv.newWechatClient() //实例化微信连接
+		content, err = srv.Wechat.Query(req.BizContent)
+	case "icbc":
+		srv.newIcbcClient() //实例化微信连接
+		content, err = srv.Icbc.Query(req.BizContent)
+	}
+	srv.handerQuery(content, res, repoOrder)
 	// 	case "wechat":
 	// 		srv.newWechatClient(config) //实例化连微信接
 	// 		content, err := srv.Wechat.Query(req.BizContent)
@@ -567,15 +535,15 @@ func (srv *Trade) userConfig(req *pd.Request) error {
 	return err
 }
 
-// // getOrder 获取订单
-// func (srv *Trade) getOrder(order *pd.Order) (repoOrder *orderPB.Order, err error) {
-// 	repoOrder = &orderPB.Order{
-// 		StoreId: order.StoreId, // 商户门店编号 收款账号ID userID
-// 		OrderNo: order.OrderNo, // 订单编号
-// 	}
-// 	err = srv.Repo.StoreIdAndOutTradeNoGet(repoOrder)
-// 	return repoOrder, err
-// }
+// getOrder 获取订单
+func (srv *Trade) getOrder(b *pd.Request) (repoOrder *orderPB.Order, err error) {
+	repoOrder = &orderPB.Order{
+		StoreId:    b.StoreId,               // 商户门店编号 收款账号ID userID
+		OutTradeNo: b.BizContent.OutTradeNo, // 订单编号
+	}
+	err = srv.Repo.StoreIdAndOutTradeNoGet(repoOrder)
+	return repoOrder, err
+}
 
 // handerOrder 处理订单
 func (srv *Trade) handerOrder(repoOrder *orderPB.Order) (*orderPB.Order, error) {
@@ -632,6 +600,7 @@ func (srv *Trade) handerAopF2F(content mxj.Map, res *pd.Response, repoOrder *ord
 		repoOrder.TradeNo = content["trade_no"].(string)
 		err = srv.successOrder(repoOrder)
 		if err != nil {
+			res.Content.Status = WAITING
 			res.Content.ReturnCode = "Query.Update.Success"
 			res.Content.ReturnMsg = "支付成功,更新订单状态失败!"
 			log.Fatal(res, err)
@@ -642,17 +611,81 @@ func (srv *Trade) handerAopF2F(content mxj.Map, res *pd.Response, repoOrder *ord
 		res.Content.TradeNo = content["trade_no"].(string)
 		res.Content.TotalFee = repoOrder.TotalFee
 		res.Content.TimeEnd = content["time_end"].(string)
-		res.Content.WechatOpenId = content["wechat_open_id"].(string)
-		res.Content.WechatIsSubscribe = content["wechat_is_subscribe"].(string)
-		res.Content.AlipayBuyerLogonId = content["alipay_buyer_logon_id"].(string)
-		res.Content.AlipayBuyerUserId = content["alipay_buyer_user_id"].(string)
+		if v, ok := content["wechat_open_id"]; ok {
+			res.Content.WechatOpenId = v.(string)
+		}
+		if v, ok := content["wechat_is_subscribe"]; ok {
+			res.Content.WechatIsSubscribe = v.(string)
+		}
+		if v, ok := content["alipay_buyer_logon_id"]; ok {
+			res.Content.AlipayBuyerLogonId = v.(string)
+		}
+		if v, ok := content["alipay_buyer_user_id"]; ok {
+			res.Content.AlipayBuyerUserId = v.(string)
+		}
 	} else {
 		res.Content.ReturnCode = content["return_code"].(string)
-		res.Content.ReturnMsg = content["return_msg"].(string)
 		log.Fatal(res, err)
 	}
+	res.Content.ReturnMsg = content["return_msg"].(string)
 	c, _ := content["content"].(mxj.Map).Json()
 	res.Content.Content = string(c)
+	return nil
+}
+
+// handerQuery 处理订单查询支付回调信息
+func (srv *Trade) handerQuery(content mxj.Map, res *pd.Response, repoOrder *orderPB.Order) (err error) {
+	if content["return_code"] == "SUCCESS" {
+		switch content["return_code"].(string) {
+		case SUCCESS:
+			err = srv.successOrder(repoOrder)
+			if err != nil {
+				res.Content.Status = WAITING
+				res.Content.ReturnCode = "Query.Update.Success"
+				res.Content.ReturnMsg = "支付成功,更新订单状态失败!"
+				log.Fatal(res, err)
+			}
+			res.Content.Status = SUCCESS
+		case CLOSED:
+			repoOrder.Fee = 0
+			repoOrder.Status = -1
+			err = srv.Repo.Update(repoOrder)
+			if err != nil {
+				res.Content.Status = WAITING
+				res.Content.ReturnCode = "Query.Update.Close"
+				res.Content.ReturnMsg = "支付失败,更新订单状态失败!"
+				log.Fatal(res, err)
+			}
+			res.Content.Status = CLOSED
+		case USERPAYING:
+			res.Content.Status = USERPAYING
+		case WAITING:
+			res.Content.Status = WAITING
+		}
+		res.Content.Channel = content["channel"].(string)
+		res.Content.OutTradeNo = content["out_trade_no"].(string)
+		res.Content.TradeNo = content["trade_no"].(string)
+		res.Content.TotalFee = repoOrder.TotalFee
+		if v, ok := content["wechat_open_id"]; ok {
+			res.Content.WechatOpenId = v.(string)
+		}
+		if v, ok := content["wechat_is_subscribe"]; ok {
+			res.Content.WechatIsSubscribe = v.(string)
+		}
+		if v, ok := content["alipay_buyer_logon_id"]; ok {
+			res.Content.AlipayBuyerLogonId = v.(string)
+		}
+		if v, ok := content["alipay_buyer_user_id"]; ok {
+			res.Content.AlipayBuyerUserId = v.(string)
+		}
+	} else {
+		res.Content.ReturnCode = content["return_code"].(string)
+		log.Fatal(res, err)
+	}
+	res.Content.ReturnMsg = content["return_msg"].(string)
+	c, _ := content["content"].(mxj.Map).Json()
+	res.Content.Content = string(c)
+	fmt.Println("454545", content)
 	return nil
 }
 

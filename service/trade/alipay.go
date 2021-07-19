@@ -1,7 +1,6 @@
 package trade
 
 import (
-
 	"github.com/clbanning/mxj"
 	notifyPB "github.com/lecex/pay/proto/notify"
 	orderPB "github.com/lecex/pay/proto/order"
@@ -89,6 +88,9 @@ func (srv *Alipay) Refund(refundOrder *orderPB.Order, originalOrder *orderPB.Ord
 // request 请求处理
 func (srv *Alipay) request(request *requests.CommonRequest) (req mxj.Map, err error) {
 	response, err := srv.Client.ProcessCommonRequest(request)
+	if err != nil {
+		return nil, err
+	}
 	return response.GetVerifySignDataMap()
 }
 

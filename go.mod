@@ -3,8 +3,8 @@ module github.com/lecex/pay
 go 1.13
 
 require (
-	github.com/bigrocs/icbc v1.7.2
 	github.com/bigrocs/alipay v1.7.2
+	github.com/bigrocs/icbc v1.7.2
 	github.com/bigrocs/wechat v1.7.2
 	github.com/clbanning/mxj v1.8.4
 	github.com/gogo/protobuf v1.3.1

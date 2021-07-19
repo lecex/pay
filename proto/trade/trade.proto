@@ -40,8 +40,8 @@ message Content {
     string channel = 3;                 // 通道内容         必选接口[AopF2F、Query、Refund、RefundQuery]     wechat
     string out_trade_no = 4;            // 订单编号         必选接口[AopF2F、Query、Refund、RefundQuery]     GZ2020010117534314525
     string trade_no = 5;                // 渠道交易编号      必选接口[AopF2F、Query、Refund、RefundQuery]     2013112011001004330000121536
-    int64 total_fee = 6;               // 订单金额 [单位分] 必选接口[AopF2F、Query、Refund、RefundQuery]     180=1.8元
-    int64 refund_fee = 7;              // 退款金额 [单位分] 必选接口[Refund、RefundQuery]                   180=1.8元
+    int64 total_fee = 6;                // 订单金额 [单位分] 必选接口[AopF2F、Query、Refund、RefundQuery]     180=1.8元
+    int64 refund_fee = 7;               // 退款金额 [单位分] 必选接口[Refund、RefundQuery]                   180=1.8元
     string status = 8;                  // 订单状态         必选接口[AopF2F、Query、Refund、RefundQuery]     SUCCESS成功、CLOSED关闭、USERPAYING等待用户付款、WAITING系统繁忙稍后查询
     string time_end = 9;                // 订单完成时间      必选接口[AopF2F、Query、Refund、RefundQuery]     SUCCESS成功、CLOSED关闭、USERPAYING等待用户付款、WAITING系统繁忙稍后查询
     string content = 10;                // 通道返回原始内容   必选接口[AopF2F、Query、Refund、RefundQuery] 

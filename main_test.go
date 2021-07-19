@@ -23,15 +23,15 @@ func TestConfigSelfUpdate(t *testing.T) {
 			Channel:   "icbc",
 			Status:    true,
 			Alipay: &configPB.Alipay{
-				AppAuthToken: os.Getenv("ALIPAY_APP_AUTH_TOKEN"),
+				AppAuthToken: os.Getenv("PAY_ALIPAY_APP_AUTH_TOKEN"),
 				Fee:          30,
 			},
 			Wechat: &configPB.Wechat{
-				SubMchId: os.Getenv("WECHAT_SUB_MCH_ID"),
+				SubMchId: os.Getenv("PAY_WECHAT_SUB_MCH_ID"),
 				Fee:      20,
 			},
 			Icbc: &configPB.Icbc{
-				SubMerId: os.Getenv("ICBC_SUB_MER_ID"),
+				SubMerId: os.Getenv("PAY_ICBC_SUB_MER_ID"),
 				Fee:      10,
 			},
 		},
@@ -40,7 +40,7 @@ func TestConfigSelfUpdate(t *testing.T) {
 	handler := &handler.Handler{}
 	h := handler.Config()
 	err := h.SelfUpdate(context.TODO(), req, res)
-	// fmt.Println("ConfigSelfUpdate", res, err)
+	// fmt.Println("ConfigSelfUpdate", req, res, err)
 	t.Log(req, res, err)
 }
 
@@ -70,10 +70,10 @@ func TestAopF2FWechat(t *testing.T) {
 		StoreId: "7b490bb0-c04d-4fd8-9bf9-ef4f2239d3a0",
 		BizContent: &tradePB.BizContent{
 			Channel:    "alipay",
-			AuthCode:   `283637297341258401`,
+			AuthCode:   `287359201063620602`,
 			Title:      `IcbcAlipay扫码支付`,
-			OutTradeNo: `GTZ2020010117534314590231`,
-			TotalFee:   1,
+			OutTradeNo: `GTB202001011753431459029`,
+			TotalFee:   2,
 			OperatorId: "0001",
 			TerminalId: "9008",
 			Attach:     `{"code": "001"}`,
@@ -87,22 +87,24 @@ func TestAopF2FWechat(t *testing.T) {
 }
 
 func TestQuery(t *testing.T) {
-	// h := handler.Pay{
-	// 	Config: &repository.ConfigRepository{db.DB},
-	// 	Repo:   &repository.OrderRepository{db.DB},
-	// 	Alipay: &service.Alipay{},
-	// 	Wechat: &service.Wechat{},
-	// }
-	// req := &payPB.Request{
-	// 	Order: &payPB.Order{
-	// 		StoreName: `ceshi`,
-	// 		OrderNo:   `GTZ202001011753431459023`,
-	// 	},
-	// }
-	// res := &payPB.Response{}
-	// err := h.Query(context.TODO(), req, res)
-	// // fmt.Println("TestQuery___", res, err)
-	// t.Log("TestQuery", req, res, err)
+	h := handler.Trade{
+		Config: &repository.ConfigRepository{db.DB},
+		Repo:   &repository.OrderRepository{db.DB},
+		Alipay: &trade.Alipay{},
+		Wechat: &trade.Wechat{},
+		Icbc:   &trade.Icbc{},
+	}
+	req := &tradePB.Request{
+		StoreId: "7b490bb0-c04d-4fd8-9bf9-ef4f2239d3a0",
+		BizContent: &tradePB.BizContent{
+			Channel:    "alipay",
+			OutTradeNo: `GTB202001011753431459029`,
+		},
+	}
+	res := &tradePB.Response{}
+	err := h.Query(context.TODO(), req, res)
+	fmt.Println("TestQuery___", res, err)
+	t.Log("TestQuery", req, res, err)
 
 }
 
