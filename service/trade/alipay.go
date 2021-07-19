@@ -1,6 +1,7 @@
 package trade
 
 import (
+
 	"github.com/clbanning/mxj"
 	notifyPB "github.com/lecex/pay/proto/notify"
 	orderPB "github.com/lecex/pay/proto/order"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/bigrocs/alipay"
 	"github.com/bigrocs/alipay/requests"
-	"github.com/bigrocs/alipay/util"
 )
 
 type Alipay struct {
@@ -28,7 +28,6 @@ func (srv *Alipay) NewClient(config map[string]string, sandbox bool) {
 	c.SignType = config["SignType"]
 	c.AppAuthToken = config["AppAuthToken"]
 	c.AliPayPublicKey = config["AliPayPublicKey"]
-	c.SignType = config["SignType"]
 	c.Sandbox = sandbox
 }
 
@@ -90,21 +89,7 @@ func (srv *Alipay) Refund(refundOrder *orderPB.Order, originalOrder *orderPB.Ord
 // request 请求处理
 func (srv *Alipay) request(request *requests.CommonRequest) (req mxj.Map, err error) {
 	response, err := srv.Client.ProcessCommonRequest(request)
-	if err != nil {
-		return req, err
-	}
-	req, err = response.GetHttpContentMap()
-	if err != nil {
-		return req, err
-	}
-	if req["sign"] == nil {
-		return response.GetSignDataMap()
-	}
-	ok, err := util.VerifySign(response.GetSignData(), req["sign"].(string), srv.config["AliPayPublicKey"], srv.config["SignType"])
-	if ok && err == nil {
-		return response.GetSignDataMap()
-	}
-	return req, err
+	return response.GetVerifySignDataMap()
 }
 
 // Notify 异步通知

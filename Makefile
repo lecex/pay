@@ -13,7 +13,6 @@ api:
 	micro api  --handler=api  --namespace=go.micro.api --address=:8081
 .PHONY: proto
 proto:
-	protoc -I . --micro_out=. --gogofaster_out=. proto/pay/pay.proto
 	protoc -I . --micro_out=. --gogofaster_out=. proto/trade/trade.proto
 	protoc -I . --micro_out=. --gogofaster_out=. proto/config/config.proto
 	protoc -I . --micro_out=. --gogofaster_out=. proto/order/order.proto

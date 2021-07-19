@@ -116,6 +116,7 @@ func order() {
 			total_fee int(16) DEFAULT NULL COMMENT '订单总金额',
 			fee int(11) DEFAULT 0 COMMENT '手续费',
 			out_trade_no varchar(36) DEFAULT NULL COMMENT '商家订单编号',
+			trade_no varchar(36) DEFAULT NULL COMMENT '渠道订单编号',
 			operator_id varchar(16) DEFAULT NULL COMMENT '商户操作员编号',
 			terminal_id varchar(16) DEFAULT NULL COMMENT '商户机具终端编号',
 			status int(11) DEFAULT 0 DEFAULT NULL COMMENT '订单状态 [-1 订单关闭,0 待付款,1 付款成功]',

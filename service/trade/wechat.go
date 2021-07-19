@@ -9,7 +9,6 @@ import (
 
 	"github.com/bigrocs/wechat"
 	"github.com/bigrocs/wechat/requests"
-	"github.com/bigrocs/wechat/util"
 
 	"github.com/clbanning/mxj"
 )
@@ -100,17 +99,7 @@ func (srv *Wechat) request(request *requests.CommonRequest) (req mxj.Map, err er
 	if err != nil {
 		return req, err
 	}
-	req, err = response.GetHttpContentMap()
-	if err != nil {
-		return req, err
-	}
-	if req["return_code"] == "SUCCESS" {
-		ok := util.VerifySign(req, req["sign"].(string), srv.config["ApiKey"], util.SignType_MD5)
-		if ok && err == nil {
-			return req, err
-		}
-	}
-	return req, err
+	return response.GetVerifySignDataMap()
 }
 
 // Notify 异步通知

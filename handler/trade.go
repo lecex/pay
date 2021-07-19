@@ -3,9 +3,10 @@ package handler
 import (
 	"context"
 	"errors"
-	"fmt"
+	"math"
 	"regexp"
 
+	"github.com/clbanning/mxj"
 	"github.com/jinzhu/gorm"
 	"github.com/micro/go-micro/v2/util/log"
 
@@ -35,6 +36,7 @@ type Trade struct {
 	Alipay *trade.Alipay
 	Wechat *trade.Wechat
 	Icbc   *trade.Icbc
+	con    *configPB.Config
 }
 
 // AopF2F 商家扫用户付款码
@@ -52,14 +54,14 @@ func (srv *Trade) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response)
 	if req.BizContent.OutTradeNo == "" {
 		return errors.New("订单编号不允许为空:BizContent.OutTradeNo")
 	}
-	config, err := srv.userConfig(req)
+	err = srv.userConfig(req)
 	if err != nil {
 		res.Content.ReturnCode = "AopF2F.userConfig"
 		res.Content.ReturnMsg = "查询商户支付配置信息失败"
 		log.Fatal(req, res, err)
 		return nil
 	}
-	if !config.Status {
+	if !srv.con.Status {
 		res.Content.ReturnCode = "AopF2F.Status"
 		res.Content.ReturnMsg = "支付功能被禁用！请联系管理员。"
 		log.Fatal(req, res, err)
@@ -88,105 +90,28 @@ func (srv *Trade) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response)
 		log.Fatal(req, res)
 		return nil
 	}
+	// 初始化回参
+	res.Content = &pd.Content{}
+	content := mxj.New()
 	switch req.BizContent.Channel {
 	case "alipay":
-		srv.newAlipayClient(config) //实例化连支付宝接
-		content, err := srv.Alipay.AopF2F(req.BizContent)
-		fmt.Println(content, err)
-		// if err != nil {
-		// 	res.Error.Code = "AopF2F.Alipay"
-		// 	res.Error.Detail = "支付宝下单失败:" + err.Error()
-		// 	log.Fatal(req, res, err)
-		// 	return nil
-		// }
-		// if content["code"] == "10000" && content["msg"] == "Success" { // 返回状态码
-		// 	res.Valid = true
-		// 	res.Order.Status = SUCCESS
-		// 	err = srv.successOrder(repoOrder, config.Icbc.Fee)
-		// 	if err != nil {
-		// 		res.Order.Status = USERPAYING
-		// 		res.Error.Code = "Query.Wechat.Update.Success"
-		// 		res.Error.Detail = "支付成功,更新订单状态失败!"
-		// 		log.Fatal(req, res, err)
-		// 	}
-		// }
-		// c, err := content.Json()
-		// if err != nil {
-		// 	res.Error.Code = "AopF2F.Alipay.Mxj"
-		// 	res.Error.Detail = "支付宝下单返回数据解析失败"
-		// 	log.Fatal(req, res, err)
-		// 	return nil
-		// }
-		// res.Content = string(c) //数据正常返回
-		// log.Fatal("AopF2F.AopF2F", req, res, err)
-		return nil
-		// case "wechat":
-		// 	srv.newWechatClient(config) //实例化微信连接
-		// 	content, err := srv.Wechat.AopF2F(req.BizContent)
-		// 	if err != nil {
-		// 		res.Error.Code = "AopF2F.Wechat"
-		// 		res.Error.Detail = "微信下单失败:" + err.Error()
-		// 		log.Fatal(req, res, err)
-		// 		return nil
-		// 	}
-		// 	if content["return_code"] == "SUCCESS" { // 返回状态码
-		// 		if content["result_code"] == "SUCCESS" { // 业务结果
-		// 			res.Valid = true
-		// 			res.Order.Status = SUCCESS
-		// 			err = srv.successOrder(repoOrder, config.Icbc.Fee)
-		// 			if err != nil {
-		// 				res.Order.Status = USERPAYING
-		// 				res.Error.Code = "Query.Wechat.Update.Success"
-		// 				res.Error.Detail = "支付成功,更新订单状态失败!"
-		// 				log.Fatal(req, res, err)
-		// 			}
-		// 		}
-		// 	}
-		// 	c, err := content.Json()
-		// 	if err != nil {
-		// 		res.Error.Code = "AopF2F.Wechat.Mxj"
-		// 		res.Error.Detail = "微信下单返回数据解析失败"
-		// 		log.Fatal(req, res, err)
-		// 		return nil
-		// 	}
-		// 	res.Content = string(c) //数据正常返回
-		// 	log.Fatal("AopF2F.Wechat", req, res, err)
-		// 	return nil
-		// case "icbc":
-		// 	srv.newIcbcClient(config) //实例化微信连接
-		// 	content, err := srv.Icbc.AopF2F(req.BizContent)
-		// 	if err != nil {
-		// 		res.Error.Code = "AopF2F.Icbc"
-		// 		res.Error.Detail = "工行下单失败:" + err.Error()
-		// 		log.Fatal(req, res, err)
-		// 		return nil
-		// 	}
-		// 	if content["return_code"] == "0" { // 返回码
-		// 		// 	-1:下单失败，0：支付中，1：支付成功，2：支付失败
-		// 		if content["pay_status"] == "1" { // 交易状态标识
-		// 			res.Valid = true
-		// 			res.Order.Status = SUCCESS
-		// 			err = srv.successOrder(repoOrder, config.Icbc.Fee)
-		// 			if err != nil {
-		// 				res.Order.Status = USERPAYING
-		// 				res.Error.Code = "Query.Icbc.Update.Success"
-		// 				res.Error.Detail = "支付成功,更新订单状态失败!"
-		// 				log.Fatal(req, res, err)
-		// 			}
-		// 		}
-		// 	}
-		// 	c, err := content.Json()
-		// 	if err != nil {
-		// 		res.Error.Code = "AopF2F.Icbc.Mxj"
-		// 		res.Error.Detail = "工行下单返回数据解析失败"
-		// 		log.Fatal(req, res, err)
-		// 		return nil
-		// 	}
-		// 	res.Content = string(c) //数据正常返回
-		// 	log.Fatal("AopF2F.Icbc", req, res, err)
-		// 	return nil
+		srv.newAlipayClient() //实例化连支付宝连接
+		content, err = srv.Alipay.AopF2F(req.BizContent)
+	case "wechat":
+		srv.newWechatClient() //实例化微信连接
+		content, err = srv.Wechat.AopF2F(req.BizContent)
+	case "icbc":
+		srv.newIcbcClient() //实例化微信连接
+		content, err = srv.Icbc.AopF2F(req.BizContent)
 	}
-	return nil
+	if err != nil {
+		res.Content.ReturnCode = "AopF2F." + req.BizContent.Channel + ".Error"
+		res.Content.ReturnMsg = req.BizContent.Channel + "下单失败:" + err.Error()
+		log.Fatal(res, err)
+		return nil
+	}
+	srv.handerAopF2F(content, res, repoOrder)
+	return err
 }
 
 // // Query 支付查询
@@ -590,16 +515,16 @@ func (srv *Trade) Refund(ctx context.Context, req *pd.Request, res *pd.Response)
 // }
 
 // userConfig 用户配置
-func (srv *Trade) userConfig(req *pd.Request) (*configPB.Config, error) {
+func (srv *Trade) userConfig(req *pd.Request) error {
 	if req.StoreId == "" {
-		return nil, errors.New("商户ID不允许为空:StoreId")
+		return errors.New("商户ID不允许为空:StoreId")
 	}
 	config := &configPB.Config{
 		Id: req.StoreId,
 	}
 	err := srv.Config.Get(config)
 	if err != nil {
-		return config, err
+		return err
 	}
 	// 通道设置
 	if req.BizContent.Channel == "" {
@@ -638,7 +563,8 @@ func (srv *Trade) userConfig(req *pd.Request) (*configPB.Config, error) {
 		config.Icbc.ReturnSignType = env.Getenv("PAY_ICBC_RETURN_SIGN_TYPE", config.Icbc.ReturnSignType)
 		config.Icbc.MerId = config.Icbc.SubMerId
 	}
-	return config, err
+	srv.con = config
+	return err
 }
 
 // // getOrder 获取订单
@@ -664,49 +590,88 @@ func (srv *Trade) handerOrder(repoOrder *orderPB.Order) (*orderPB.Order, error) 
 }
 
 // newAlipayClient 实例化支付宝付款方式连接
-func (srv *Trade) newAlipayClient(c *configPB.Config) {
+func (srv *Trade) newAlipayClient() {
 	srv.Alipay.NewClient(map[string]string{
-		"AppId":                c.Alipay.AppId,
-		"PrivateKey":           c.Alipay.PrivateKey,
-		"AliTradePublicKey":    c.Alipay.AliPayPublicKey,
-		"AppAuthToken":         c.Alipay.AppAuthToken,
-		"SysServiceProviderId": c.Alipay.SysServiceProviderId,
-		"SignType":             c.Alipay.SignType,
-	}, c.Alipay.Sandbox)
+		"AppId":                srv.con.Alipay.AppId,
+		"PrivateKey":           srv.con.Alipay.PrivateKey,
+		"AliPayPublicKey":      srv.con.Alipay.AliPayPublicKey,
+		"AppAuthToken":         srv.con.Alipay.AppAuthToken,
+		"SysServiceProviderId": srv.con.Alipay.SysServiceProviderId,
+		"SignType":             srv.con.Alipay.SignType,
+	}, srv.con.Alipay.Sandbox)
 }
 
-// // newWechatClient 实例化微信付款方式连接
-// func (srv *Trade) newWechatClient(c *configPB.Config) {
-// 	srv.Wechat.NewClient(map[string]string{
-// 		"AppId":    c.Wechat.AppId,
-// 		"MchId":    c.Wechat.MchId,
-// 		"ApiKey":   c.Wechat.ApiKey,
-// 		"SubAppId": c.Wechat.SubAppId,
-// 		"SubMchId": c.Wechat.SubMchId,
-// 		"PemCert":  c.Wechat.PemCert,
-// 		"PemKey":   c.Wechat.PemKey,
-// 	}, c.Wechat.Sandbox)
-// }
+// newWechatClient 实例化微信付款方式连接
+func (srv *Trade) newWechatClient() {
+	srv.Wechat.NewClient(map[string]string{
+		"AppId":    srv.con.Wechat.AppId,
+		"MchId":    srv.con.Wechat.MchId,
+		"ApiKey":   srv.con.Wechat.ApiKey,
+		"SubAppId": srv.con.Wechat.SubAppId,
+		"SubMchId": srv.con.Wechat.SubMchId,
+		"PemCert":  srv.con.Wechat.PemCert,
+		"PemKey":   srv.con.Wechat.PemKey,
+	}, srv.con.Wechat.Sandbox)
+}
 
-// // newIcbcClient 实例化微信付款方式连接
-// func (srv *Trade) newIcbcClient(c *configPB.Config) {
-// 	srv.Icbc.NewClient(map[string]string{
-// 		"AppId":          c.Icbc.AppId,
-// 		"PrivateKey":     c.Icbc.PrivateKey,
-// 		"IcbcPublicKey":  c.Icbc.IcbcPublicKey,
-// 		"SignType":       c.Icbc.SignType,
-// 		"ReturnSignType": c.Icbc.ReturnSignType,
-// 		"MerId":          c.Icbc.MerId,
-// 	})
-// }
+// newIcbcClient 实例化微信付款方式连接
+func (srv *Trade) newIcbcClient() {
+	srv.Icbc.NewClient(map[string]string{
+		"AppId":          srv.con.Icbc.AppId,
+		"PrivateKey":     srv.con.Icbc.PrivateKey,
+		"IcbcPublicKey":  srv.con.Icbc.IcbcPublicKey,
+		"SignType":       srv.con.Icbc.SignType,
+		"ReturnSignType": srv.con.Icbc.ReturnSignType,
+		"MerId":          srv.con.Icbc.MerId,
+	})
+}
 
-// // 支付成功订单处理
-// func (srv *Trade) successOrder(repoOrder *orderPB.Order, fee int64) (err error) {
-// 	repoOrder.Status = 1
-// 	repoOrder.Fee = int64(math.Floor(float64(repoOrder.TotalAmount*fee)/10000 + 0.5)) // 相乘后转浮点型乘以万分之一然后四舍五入 【+0.5四舍五入取整】
-// 	err = srv.Repo.Update(repoOrder)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return err
-// }
+// handerAopF2F 处理扫码支付回调信息
+func (srv *Trade) handerAopF2F(content mxj.Map, res *pd.Response, repoOrder *orderPB.Order) (err error) {
+	if content["return_code"] == "SUCCESS" {
+		repoOrder.TradeNo = content["trade_no"].(string)
+		err = srv.successOrder(repoOrder)
+		if err != nil {
+			res.Content.ReturnCode = "Query.Update.Success"
+			res.Content.ReturnMsg = "支付成功,更新订单状态失败!"
+			log.Fatal(res, err)
+		}
+		res.Content.Status = SUCCESS
+		res.Content.Channel = content["channel"].(string)
+		res.Content.OutTradeNo = content["out_trade_no"].(string)
+		res.Content.TradeNo = content["trade_no"].(string)
+		res.Content.TotalFee = repoOrder.TotalFee
+		res.Content.TimeEnd = content["time_end"].(string)
+		res.Content.WechatOpenId = content["wechat_open_id"].(string)
+		res.Content.WechatIsSubscribe = content["wechat_is_subscribe"].(string)
+		res.Content.AlipayBuyerLogonId = content["alipay_buyer_logon_id"].(string)
+		res.Content.AlipayBuyerUserId = content["alipay_buyer_user_id"].(string)
+	} else {
+		res.Content.ReturnCode = content["return_code"].(string)
+		res.Content.ReturnMsg = content["return_msg"].(string)
+		log.Fatal(res, err)
+	}
+	c, _ := content["content"].(mxj.Map).Json()
+	res.Content.Content = string(c)
+	return nil
+}
+
+// successOrder 支付成功订单处理
+func (srv *Trade) successOrder(repoOrder *orderPB.Order) (err error) {
+	var fee int64
+	switch repoOrder.Channel {
+	case "alipay":
+		fee = srv.con.Alipay.Fee
+	case "wechat":
+		fee = srv.con.Wechat.Fee
+	case "icbc":
+		fee = srv.con.Icbc.Fee
+	}
+	repoOrder.Status = 1
+	repoOrder.Fee = int64(math.Floor(float64(repoOrder.TotalFee*fee)/10000 + 0.5)) // 相乘后转浮点型乘以万分之一然后四舍五入 【+0.5四舍五入取整】
+	err = srv.Repo.Update(repoOrder)
+	if err != nil {
+		return err
+	}
+	return err
+}

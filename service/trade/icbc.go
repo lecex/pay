@@ -13,7 +13,6 @@ import (
 
 	"github.com/bigrocs/icbc"
 	"github.com/bigrocs/icbc/requests"
-	"github.com/bigrocs/icbc/util"
 )
 
 type Icbc struct {
@@ -93,18 +92,7 @@ func (srv *Icbc) request(request *requests.CommonRequest) (req mxj.Map, err erro
 	if err != nil {
 		return req, err
 	}
-	req, err = response.GetHttpContentMap()
-	if err != nil {
-		return req, err
-	}
-	if req["sign"] == nil {
-		return response.GetSignDataMap()
-	}
-	ok, err := util.VerifySign(response.GetSignData(), req["sign"].(string), srv.config["IcbcPublicKey"], srv.config["ReturnSignType"])
-	if ok && err == nil {
-		return response.GetSignDataMap()
-	}
-	return req, err
+	return response.GetVerifySignDataMap()
 }
 
 // Notify 异步通知

@@ -29,13 +29,14 @@ message Order {
     int64 total_fee = 6; // 订单总金额
     int64 fee = 7; // 手续费
     string out_trade_no = 8;    // 订单编号
-    string operator_id = 9; // 商户操作员编号
-    string terminal_id = 10; // 商户机具终端编号
-    int64 status = 11;    // 订单状态 
-    int64 refund_fee = 12; // 已退款金额
-    string link_id = 13; // 退款订单关联订单
-    string created_at = 14;
-    string updated_at = 15;
+    string trade_no = 9;    // 订单编号
+    string operator_id = 10; // 商户操作员编号
+    string terminal_id = 11; // 商户机具终端编号
+    int64 status = 12;    // 订单状态 
+    int64 refund_fee = 13; // 已退款金额
+    string link_id = 14; // 退款订单关联订单
+    string created_at = 15;
+    string updated_at = 16;
 }
 
 message ListQuery{

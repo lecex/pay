@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -23,15 +24,15 @@ func TestConfigSelfUpdate(t *testing.T) {
 			Status:    true,
 			Alipay: &configPB.Alipay{
 				AppAuthToken: os.Getenv("ALIPAY_APP_AUTH_TOKEN"),
-				Fee:          38,
+				Fee:          30,
 			},
 			Wechat: &configPB.Wechat{
 				SubMchId: os.Getenv("WECHAT_SUB_MCH_ID"),
-				Fee:      38,
+				Fee:      20,
 			},
 			Icbc: &configPB.Icbc{
 				SubMerId: os.Getenv("ICBC_SUB_MER_ID"),
-				Fee:      38,
+				Fee:      10,
 			},
 		},
 	}
@@ -68,10 +69,10 @@ func TestAopF2FWechat(t *testing.T) {
 	req := &tradePB.Request{
 		StoreId: "7b490bb0-c04d-4fd8-9bf9-ef4f2239d3a0",
 		BizContent: &tradePB.BizContent{
-			Channel:    "icbc",
-			AuthCode:   `136514469045151336`,
+			Channel:    "alipay",
+			AuthCode:   `283637297341258401`,
 			Title:      `IcbcAlipay扫码支付`,
-			OutTradeNo: `GTZ202001011753431459023`,
+			OutTradeNo: `GTZ2020010117534314590231`,
 			TotalFee:   1,
 			OperatorId: "0001",
 			TerminalId: "9008",
@@ -80,7 +81,7 @@ func TestAopF2FWechat(t *testing.T) {
 	}
 	res := &tradePB.Response{}
 	err := h.AopF2F(context.TODO(), req, res)
-	// fmt.Println("____________A", res, err)
+	fmt.Println("TestAopF2FWechat____________", res, err)
 	t.Log("TestAopF2FWechat", req, res, err)
 
 }
