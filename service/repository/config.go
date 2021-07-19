@@ -124,24 +124,24 @@ func (repo *ConfigRepository) Delete(config *pb.Config) (valid bool, err error) 
 func (repo *ConfigRepository) Related(config *pb.Config) error {
 	Alipay := &pb.Alipay{}
 	if err := repo.DB.Model(&config).Related(Alipay).Error; err != nil {
-		if err.Error() != "record not found Alipay" {
-			return err
-		}
-	}
-	Wechat := &pb.Wechat{}
-	if err := repo.DB.Model(&config).Related(Wechat).Error; err != nil {
-		if err.Error() != "record not found Wechat" {
-			return err
-		}
-	}
-	Icbc := &pb.Icbc{}
-	if err := repo.DB.Model(&config).Related(Icbc).Error; err != nil {
-		if err.Error() != "record not found Icbc" {
+		if err.Error() != "record not found" {
 			return err
 		}
 	}
 	config.Alipay = Alipay
+	Wechat := &pb.Wechat{}
+	if err := repo.DB.Model(&config).Related(Wechat).Error; err != nil {
+		if err.Error() != "record not found" {
+			return err
+		}
+	}
 	config.Wechat = Wechat
+	Icbc := &pb.Icbc{}
+	if err := repo.DB.Model(&config).Related(Icbc).Error; err != nil {
+		if err.Error() != "record not found" {
+			return err
+		}
+	}
 	config.Icbc = Icbc
 	return nil
 }
