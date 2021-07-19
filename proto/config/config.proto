@@ -49,9 +49,10 @@ message Icbc {
     string icbc_public_key = 4;     // 工行公钥
     string sign_type = 5;           // 发送数据加密方式
     string return_sign_type = 6;    // 工行返回数据加密方式
-    string mer_id = 7;              // 子商户ID
-    int64 fee = 8;                  // 手续费比率 万分率
-    bool sandbox = 9;               // 沙盒测试模式 暂时不支持
+    string mer_id = 7;              // 商户ID
+    string sub_mer_id = 8;          // 子商户ID
+    int64 fee = 9;                  // 手续费比率 万分率
+    bool sandbox = 10;               // 沙盒测试模式 暂时不支持
 }
 
 message Config {
@@ -61,7 +62,7 @@ message Config {
     int64 wechat_id = 4;        // 微信ID
     int64 icbc_id = 5;          // 工行ID
     string channel = 6;         // 默认聚合支付通道 [icbc 可选 ,alipay,wechat不可选]
-    bool stauts = 7;            // 状态
+    bool status = 7;            // 状态
     Alipay alipay = 8;          // 支付宝配置
     Wechat wechat = 9;          // 微信配置
     Icbc icbc = 10;              // 工行配置

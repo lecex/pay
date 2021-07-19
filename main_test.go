@@ -2,15 +2,14 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 
 	configPB "github.com/lecex/pay/proto/config"
-	payPB "github.com/lecex/pay/proto/pay"
+	tradePB "github.com/lecex/pay/proto/trade"
 	db "github.com/lecex/pay/providers/database"
-	"github.com/lecex/pay/service"
 	"github.com/lecex/pay/service/repository"
+	"github.com/lecex/pay/service/trade"
 
 	"github.com/lecex/pay/handler"
 )
@@ -18,37 +17,21 @@ import (
 func TestConfigSelfUpdate(t *testing.T) {
 	req := &configPB.Request{
 		Config: &configPB.Config{
-			Id:        `bvbv011511212`,
-			StoreName: "ceshi",
+			Id:        `7b490bb0-c04d-4fd8-9bf9-ef4f2239d3a0`,
+			StoreName: "ceshi1",
 			Channel:   "icbc",
-			Stauts:    true,
+			Status:    true,
 			Alipay: &configPB.Alipay{
-				AppId:                os.Getenv("ALIPAY_APPID"),
-				PrivateKey:           os.Getenv("ALIPAY_PRIVATE_KEY"),
-				AliPayPublicKey:      os.Getenv("ALIPAY_PUBLIC_KEY"),
-				SignType:             "RSA2",
-				AppAuthToken:         os.Getenv("ALIPAY_APP_AUTH_TOKEN"),
-				SysServiceProviderId: os.Getenv("ALIPAY_SYS_SERVICE_PROVIDER_ID"),
-				Fee:                  38,
+				AppAuthToken: os.Getenv("ALIPAY_APP_AUTH_TOKEN"),
+				Fee:          38,
 			},
 			Wechat: &configPB.Wechat{
-				AppId:    os.Getenv("WECHAT_APPID"),
-				MchId:    os.Getenv("WECHAT_MCH_ID"),
-				ApiKey:   os.Getenv("WECHAT_API_KEY"),
-				PemCert:  os.Getenv("WECHAT_PEM_CERT"),
-				PemKey:   os.Getenv("WECHAT_PEM_KEY"),
-				SubAppId: os.Getenv("WECHAT_SUB_APP_ID"),
 				SubMchId: os.Getenv("WECHAT_SUB_MCH_ID"),
 				Fee:      38,
 			},
 			Icbc: &configPB.Icbc{
-				AppId:          os.Getenv("ICBC_APPID"),
-				PrivateKey:     os.Getenv("ICBC_PRIVATE_KEY"),
-				IcbcPublicKey:  os.Getenv("ICBC_PUBLIC_KEY"),
-				SignType:       "RSA2",
-				ReturnSignType: "RSA",
-				MerId:          os.Getenv("ICBC_MER_ID"),
-				Fee:            38,
+				SubMerId: os.Getenv("ICBC_SUB_MER_ID"),
+				Fee:      38,
 			},
 		},
 	}
@@ -75,24 +58,27 @@ func TestConfigGet(t *testing.T) {
 }
 
 func TestAopF2FWechat(t *testing.T) {
-	h := handler.Pay{
+	h := handler.Trade{
 		Config: &repository.ConfigRepository{db.DB},
 		Repo:   &repository.OrderRepository{db.DB},
-		Alipay: &service.Alipay{},
-		Wechat: &service.Wechat{},
-		Icbc:   &service.Icbc{},
+		Alipay: &trade.Alipay{},
+		Wechat: &trade.Wechat{},
+		Icbc:   &trade.Icbc{},
 	}
-	req := &payPB.Request{
-		Order: &payPB.Order{
-			StoreName:   `ceshi`,
-			Method:      `icbc`,
-			AuthCode:    `136514469045151336`,
-			Title:       `IcbcAlipay扫码支付`,
-			OrderNo:     `GTZ202001011753431459023`,
-			TotalAmount: 1,
+	req := &tradePB.Request{
+		StoreId: "7b490bb0-c04d-4fd8-9bf9-ef4f2239d3a0",
+		BizContent: &tradePB.BizContent{
+			Channel:    "icbc",
+			AuthCode:   `136514469045151336`,
+			Title:      `IcbcAlipay扫码支付`,
+			OutTradeNo: `GTZ202001011753431459023`,
+			TotalFee:   1,
+			OperatorId: "0001",
+			TerminalId: "9008",
+			Attach:     `{"code": "001"}`,
 		},
 	}
-	res := &payPB.Response{}
+	res := &tradePB.Response{}
 	err := h.AopF2F(context.TODO(), req, res)
 	// fmt.Println("____________A", res, err)
 	t.Log("TestAopF2FWechat", req, res, err)
@@ -100,43 +86,41 @@ func TestAopF2FWechat(t *testing.T) {
 }
 
 func TestQuery(t *testing.T) {
-	h := handler.Pay{
-		Config: &repository.ConfigRepository{db.DB},
-		Repo:   &repository.OrderRepository{db.DB},
-		Alipay: &service.Alipay{},
-		Wechat: &service.Wechat{},
-		Icbc:   &service.Icbc{},
-	}
-	req := &payPB.Request{
-		Order: &payPB.Order{
-			StoreName: `ceshi`,
-			OrderNo:   `GTZ202001011753431459023`,
-		},
-	}
-	res := &payPB.Response{}
-	err := h.Query(context.TODO(), req, res)
-	// fmt.Println("TestQuery___", res, err)
-	t.Log("TestQuery", req, res, err)
+	// h := handler.Pay{
+	// 	Config: &repository.ConfigRepository{db.DB},
+	// 	Repo:   &repository.OrderRepository{db.DB},
+	// 	Alipay: &service.Alipay{},
+	// 	Wechat: &service.Wechat{},
+	// }
+	// req := &payPB.Request{
+	// 	Order: &payPB.Order{
+	// 		StoreName: `ceshi`,
+	// 		OrderNo:   `GTZ202001011753431459023`,
+	// 	},
+	// }
+	// res := &payPB.Response{}
+	// err := h.Query(context.TODO(), req, res)
+	// // fmt.Println("TestQuery___", res, err)
+	// t.Log("TestQuery", req, res, err)
 
 }
 
 func TestRefund(t *testing.T) {
-	h := handler.Pay{
-		Config: &repository.ConfigRepository{db.DB},
-		Repo:   &repository.OrderRepository{db.DB},
-		Alipay: &service.Alipay{},
-		Wechat: &service.Wechat{},
-		Icbc:   &service.Icbc{},
-	}
-	req := &payPB.Request{
-		Order: &payPB.Order{
-			StoreName:       `ceshi`,
-			OriginalOrderNo: `GTZ202001011753431459023`,
-		},
-	}
-	res := &payPB.Response{}
-	err := h.Refund(context.TODO(), req, res)
-	fmt.Println("TestRefund_____", res, err)
-	t.Log("TestAffirmRefund", req, res, err)
+	// h := handler.Pay{
+	// 	Config: &repository.ConfigRepository{db.DB},
+	// 	Repo:   &repository.OrderRepository{db.DB},
+	// 	Alipay: &service.Alipay{},
+	// 	Wechat: &service.Wechat{},
+	// }
+	// req := &payPB.Request{
+	// 	Order: &payPB.Order{
+	// 		StoreName:       `ceshi`,
+	// 		OriginalOrderNo: `GTZ202001011753431459023`,
+	// 	},
+	// }
+	// res := &payPB.Response{}
+	// err := h.Refund(context.TODO(), req, res)
+	// fmt.Println("TestRefund_____", res, err)
+	// t.Log("TestAffirmRefund", req, res, err)
 
 }

@@ -23,15 +23,15 @@ service Orders {
 message Order {
     string id = 1; //  UUID 前端生产全局唯一
     string store_id = 2;    // 商户门店编号 收款账号ID userID
-    string method = 3;    // 付款方式 [支付宝、微信、银联等]
+    string channel = 3;    // 通道内容 [支付宝、微信、银联等]
     string auth_code = 4; // 付款码
     string title = 5;   // 订单标题
-    int64 total_amount = 6; // 订单总金额
+    int64 total_fee = 6; // 订单总金额
     int64 fee = 7; // 手续费
-    string order_no = 8;    // 订单编号
+    string out_trade_no = 8;    // 订单编号
     string operator_id = 9; // 商户操作员编号
     string terminal_id = 10; // 商户机具终端编号
-    int64 stauts = 11;    // 订单状态 
+    int64 status = 11;    // 订单状态 
     int64 refund_fee = 12; // 已退款金额
     string link_id = 13; // 退款订单关联订单
     string created_at = 14;

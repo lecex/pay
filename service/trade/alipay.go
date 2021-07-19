@@ -1,10 +1,10 @@
-package service
+package trade
 
 import (
 	"github.com/clbanning/mxj"
 	notifyPB "github.com/lecex/pay/proto/notify"
 	orderPB "github.com/lecex/pay/proto/order"
-	proto "github.com/lecex/pay/proto/pay"
+	proto "github.com/lecex/pay/proto/trade"
 	"github.com/shopspring/decimal"
 
 	// "github.com/shopspring/decimal"
@@ -27,34 +27,34 @@ func (srv *Alipay) NewClient(config map[string]string, sandbox bool) {
 	c.PrivateKey = config["PrivateKey"]
 	c.SignType = config["SignType"]
 	c.AppAuthToken = config["AppAuthToken"]
+	c.AliPayPublicKey = config["AliPayPublicKey"]
+	c.SignType = config["SignType"]
 	c.Sandbox = sandbox
 }
 
 // Query 支付查询
-func (srv *Alipay) Query(order *proto.Order) (req mxj.Map, err error) {
-	c := srv.Client.Config
-	c.Method = "alipay.trade.query"
+func (srv *Alipay) Query(b *proto.BizContent) (req mxj.Map, err error) {
 	// 配置参数
 	request := requests.NewCommonRequest()
+	request.ApiName = "alipay.trade.query"
 	request.BizContent = map[string]interface{}{
-		"out_trade_no": order.OrderNo,
+		"out_trade_no": b.OutTradeNo,
 	}
 	return srv.request(request)
 }
 
 // AopF2F 商家扫用户付款码
 //    文档地址：https://docs.open.alipay.com/api_1/alipay.trade.pay
-func (srv *Alipay) AopF2F(order *proto.Order) (req mxj.Map, err error) {
-	c := srv.Client.Config
-	c.Method = "alipay.trade.pay"
+func (srv *Alipay) AopF2F(b *proto.BizContent) (req mxj.Map, err error) {
 	// 配置参数
 	request := requests.NewCommonRequest()
+	request.ApiName = "alipay.trade.pay"
 	request.BizContent = map[string]interface{}{
-		"subject":         order.Title,
+		"subject":         b.Title,
 		"scene":           "bar_code",
-		"auth_code":       order.AuthCode,
-		"out_trade_no":    order.OrderNo,
-		"total_amount":    decimal.NewFromFloat(float64(order.TotalAmount)).Div(decimal.NewFromFloat(float64(100))),
+		"auth_code":       b.AuthCode,
+		"out_trade_no":    b.OutTradeNo,
+		"total_amount":    decimal.NewFromFloat(float64(b.TotalFee)).Div(decimal.NewFromFloat(float64(100))),
 		"timeout_express": "2m",
 		"extend_params":   map[string]interface{}{"sys_service_provider_id": srv.config["SysServiceProviderId"]},
 	}
@@ -63,13 +63,12 @@ func (srv *Alipay) AopF2F(order *proto.Order) (req mxj.Map, err error) {
 
 // Cancel 撤销交易
 //    文档地址：https://opendocs.alipay.com/apis/api_1/alipay.trade.cancel/
-func (srv *Alipay) Cancel(order *proto.Order) (req mxj.Map, err error) {
-	c := srv.Client.Config
-	c.Method = "alipay.trade.cancel"
+func (srv *Alipay) Cancel(b *proto.BizContent) (req mxj.Map, err error) {
 	// 配置参数
 	request := requests.NewCommonRequest()
+	request.ApiName = "alipay.trade.cancel"
 	request.BizContent = map[string]interface{}{
-		"out_trade_no": order.OrderNo,
+		"out_trade_no": b.OutTradeNo,
 	}
 	return srv.request(request)
 }
@@ -77,14 +76,13 @@ func (srv *Alipay) Cancel(order *proto.Order) (req mxj.Map, err error) {
 // Refund 交易退款
 //    文档地址：https://opendocs.alipay.com/apis/api_1/alipay.trade.refund/
 func (srv *Alipay) Refund(refundOrder *orderPB.Order, originalOrder *orderPB.Order) (req mxj.Map, err error) {
-	c := srv.Client.Config
-	c.Method = "alipay.trade.refund"
 	// 配置参数
 	request := requests.NewCommonRequest()
+	request.ApiName = "alipay.trade.refund"
 	request.BizContent = map[string]interface{}{
-		"out_trade_no":   originalOrder.OrderNo,
-		"out_request_no": refundOrder.OrderNo,
-		"refund_amount":  decimal.NewFromFloat(float64(-refundOrder.TotalAmount)).Div(decimal.NewFromFloat(float64(100))),
+		"out_trade_no":   originalOrder.OutTradeNo,
+		"out_request_no": refundOrder.OutTradeNo,
+		"refund_amount":  decimal.NewFromFloat(float64(-refundOrder.TotalFee)).Div(decimal.NewFromFloat(float64(100))),
 	}
 	return srv.request(request)
 }

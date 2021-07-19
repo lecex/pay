@@ -1,4 +1,4 @@
-package service
+package trade
 
 import (
 	"strconv"
@@ -7,7 +7,7 @@ import (
 	"github.com/clbanning/mxj"
 	notifyPB "github.com/lecex/pay/proto/notify"
 	orderPB "github.com/lecex/pay/proto/order"
-	proto "github.com/lecex/pay/proto/pay"
+	proto "github.com/lecex/pay/proto/trade"
 
 	// "github.com/shopspring/decimal"
 
@@ -31,28 +31,28 @@ func (srv *Icbc) NewClient(config map[string]string) {
 }
 
 // Query 支付查询
-func (srv *Icbc) Query(order *proto.Order) (req mxj.Map, err error) {
+func (srv *Icbc) Query(b *proto.BizContent) (req mxj.Map, err error) {
 	// 配置参数
 	request := requests.NewCommonRequest()
 	request.ApiName = "pay.orderquery"
 	request.BizContent = map[string]interface{}{
 		"mer_id":       srv.config["MerId"],
-		"out_trade_no": order.OrderNo,
+		"out_trade_no": b.OutTradeNo,
 	}
 	return srv.request(request)
 }
 
 // AopF2F 商家扫用户付款码
 //    文档地址：https://docs.open.icbc.com/api_1/icbc.trade.pay
-func (srv *Icbc) AopF2F(order *proto.Order) (req mxj.Map, err error) {
+func (srv *Icbc) AopF2F(b *proto.BizContent) (req mxj.Map, err error) {
 	// 配置参数
 	request := requests.NewCommonRequest()
 	request.ApiName = "pay.pay"
 	request.BizContent = map[string]interface{}{
 		"mer_id":       srv.config["MerId"],
-		"qr_code":      order.AuthCode,
-		"out_trade_no": order.OrderNo,
-		"order_amt":    strconv.FormatInt(order.TotalAmount, 10),
+		"qr_code":      b.AuthCode,
+		"out_trade_no": b.OutTradeNo,
+		"order_amt":    strconv.FormatInt(b.TotalFee, 10),
 		"trade_date":   time.Now().Format("20060102"),
 		"trade_time":   time.Now().Format("150405"),
 	}
@@ -67,21 +67,21 @@ func (srv *Icbc) Refund(refundOrder *orderPB.Order, originalOrder *orderPB.Order
 	request.ApiName = "pay.refund"
 	request.BizContent = map[string]interface{}{
 		"mer_id":       srv.config["MerId"],
-		"out_trade_no": originalOrder.OrderNo,
-		"reject_no":    refundOrder.OrderNo,
-		"reject_amt":   strconv.FormatInt(-refundOrder.TotalAmount, 10),
+		"out_trade_no": originalOrder.OutTradeNo,
+		"reject_no":    refundOrder.OutTradeNo,
+		"reject_amt":   strconv.FormatInt(-refundOrder.TotalFee, 10),
 	}
 	return srv.request(request)
 }
 
 // Query 支付查询
-func (srv *Icbc) RefundQuery(order *proto.Order) (req mxj.Map, err error) {
+func (srv *Icbc) RefundQuery(b *proto.BizContent) (req mxj.Map, err error) {
 	// 配置参数
 	request := requests.NewCommonRequest()
 	request.ApiName = "pay.refundquery"
 	request.BizContent = map[string]interface{}{
 		"mer_id":       srv.config["MerId"],
-		"out_trade_no": order.OrderNo,
+		"out_trade_no": b.OutTradeNo,
 		"reject_no":    "", //debug
 	}
 	return srv.request(request)

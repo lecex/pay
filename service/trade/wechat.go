@@ -1,11 +1,11 @@
-package pay
+package trade
 
 import (
 	"strconv"
 	"time"
 
 	orderPB "github.com/lecex/pay/proto/order"
-	proto "github.com/lecex/pay/proto/pay"
+	proto "github.com/lecex/pay/proto/trade"
 
 	"github.com/bigrocs/wechat"
 	"github.com/bigrocs/wechat/requests"
@@ -34,13 +34,13 @@ func (srv *Wechat) NewClient(config map[string]string, sandbox bool) {
 }
 
 // Query 支付查询
-func (srv *Wechat) Query(order *proto.Order) (req mxj.Map, err error) {
+func (srv *Wechat) Query(b *proto.BizContent) (req mxj.Map, err error) {
 	// 配置参数
 	request := requests.NewCommonRequest()
 	request.Domain = "mch"
 	request.ApiName = "pay.orderquery"
 	request.QueryParams = map[string]interface{}{
-		"out_trade_no": order.OrderNo,
+		"out_trade_no": b.OutTradeNo,
 	}
 	// 请求
 	return srv.request(request)
@@ -48,16 +48,16 @@ func (srv *Wechat) Query(order *proto.Order) (req mxj.Map, err error) {
 
 // AopF2F 商家扫用户付款码
 //    文档地址：https://pay.weixin.qq.com/wiki/doc/api/micropay_sl.php?chapter=9_10&index=1
-func (srv *Wechat) AopF2F(order *proto.Order) (req mxj.Map, err error) {
+func (srv *Wechat) AopF2F(b *proto.BizContent) (req mxj.Map, err error) {
 	// 配置参数
 	request := requests.NewCommonRequest()
 	request.Domain = "mch"
 	request.ApiName = "pay.micropay"
 	request.QueryParams = map[string]interface{}{
-		"auth_code":        order.AuthCode,
-		"body":             order.Title,
-		"out_trade_no":     order.OrderNo,
-		"total_fee":        strconv.FormatInt(order.TotalAmount, 10),
+		"auth_code":        b.AuthCode,
+		"body":             b.Title,
+		"out_trade_no":     b.OutTradeNo,
+		"total_fee":        strconv.FormatInt(b.TotalFee, 10),
 		"spbill_create_ip": "127.0.0.1",
 		"time_start":       time.Now().Format("20060102150405"),                      // 当前时间
 		"time_expire":      time.Now().Add(time.Minute * 2).Format("20060102150405"), // 二分钟后结束
@@ -69,12 +69,12 @@ func (srv *Wechat) AopF2F(order *proto.Order) (req mxj.Map, err error) {
 
 // Cancel 撤销交易
 //    文档地址：https://pay.weixin.qq.com/wiki/doc/api/micropay.php?chapter=9_11&index=3
-func (srv *Wechat) Cancel(order *proto.Order) (req mxj.Map, err error) {
+func (srv *Wechat) Cancel(b *proto.BizContent) (req mxj.Map, err error) {
 	request := requests.NewCommonRequest()
 	request.Domain = "mch"
 	request.ApiName = "pay.reverse"
 	request.QueryParams = map[string]interface{}{
-		"out_trade_no": order.OrderNo,
+		"out_trade_no": b.OutTradeNo,
 	}
 	return srv.request(request)
 }
@@ -86,10 +86,10 @@ func (srv *Wechat) Refund(refundOrder *orderPB.Order, originalOrder *orderPB.Ord
 	request.Domain = "mch"
 	request.ApiName = "pay.refund"
 	request.QueryParams = map[string]interface{}{
-		"out_trade_no":  originalOrder.OrderNo,
-		"out_refund_no": refundOrder.OrderNo,
-		"total_fee":     strconv.FormatInt(originalOrder.TotalAmount, 10),
-		"refund_fee":    strconv.FormatInt(-refundOrder.TotalAmount, 10),
+		"out_trade_no":  originalOrder.OutTradeNo,
+		"out_refund_no": refundOrder.OutTradeNo,
+		"total_fee":     strconv.FormatInt(originalOrder.TotalFee, 10),
+		"refund_fee":    strconv.FormatInt(-refundOrder.TotalFee, 10),
 	}
 	return srv.request(request)
 }
@@ -105,7 +105,7 @@ func (srv *Wechat) request(request *requests.CommonRequest) (req mxj.Map, err er
 		return req, err
 	}
 	if req["return_code"] == "SUCCESS" {
-		ok := util.VerifySign(req, srv.config["ApiKey"], util.SignType_MD5)
+		ok := util.VerifySign(req, req["sign"].(string), srv.config["ApiKey"], util.SignType_MD5)
 		if ok && err == nil {
 			return req, err
 		}
