@@ -44,7 +44,6 @@ func (srv *Handler) Pay() *Pay {
 		Repo:   &repository.OrderRepository{db.DB},
 		Alipay: &service.Alipay{},
 		Wechat: &service.Wechat{},
-		Icbc:   &service.Icbc{},
 	}
 }
 

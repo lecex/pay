@@ -26,7 +26,7 @@ func config() {
 			alipay_id int(11) DEFAULT 0 COMMENT '支付宝配置ID',
 			wechat_id int(11) DEFAULT 0 COMMENT '微信配置ID',
 			icbc_id int(11) DEFAULT 0 COMMENT '工行配置ID',
-			channel varchar(16) DEFAULT 0 COMMENT '默认支付通道',
+			channel varchar(16) DEFAULT NULL COMMENT '默认支付通道',
 			stauts int(11) DEFAULT 1 COMMENT '商品状态(禁用0、启用1)',
 			created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
