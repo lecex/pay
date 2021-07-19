@@ -40,17 +40,18 @@ message Content {
     string return_msg = 2;              // 返回消息         必选接口[AopF2F、Query、Refund、RefundQuery]     支付失败
     string channel = 3;                 // 通道内容         必选接口[AopF2F、Query、Refund、RefundQuery]     wechat
     string out_trade_no = 4;            // 订单编号         必选接口[AopF2F、Query、Refund、RefundQuery]     GZ2020010117534314525
-    string trade_no = 5;                // 渠道交易编号      必选接口[AopF2F、Query、Refund、RefundQuery]     2013112011001004330000121536
-    int64 total_fee = 6;                // 订单金额 [单位分] 必选接口[AopF2F、Query、Refund、RefundQuery]     180=1.8元
-    int64 refund_fee = 7;               // 退款金额 [单位分] 必选接口[Refund、RefundQuery]                   180=1.8元
-    string status = 8;                  // 订单状态         必选接口[AopF2F、Query、Refund、RefundQuery]     SUCCESS成功、CLOSED关闭、USERPAYING等待用户付款、WAITING系统繁忙稍后查询
-    string time_end = 9;                // 订单完成时间      必选接口[AopF2F、Query、Refund、RefundQuery]     SUCCESS成功、CLOSED关闭、USERPAYING等待用户付款、WAITING系统繁忙稍后查询
-    string content = 10;                // 通道返回原始内容   必选接口[AopF2F、Query、Refund、RefundQuery] 
-    string wechat_open_id = 11;         // 微信openid       必选接口[]                                      oUpF8uN95-Pteags6E_roPHg7AG
-    string wechat_is_subscribe = 12;    // 是否微信关注公众号 必选接口[]                                      Y/N
-    string alipay_buyer_logon_id = 13;  // 支付宝账号        必选接口[]                                     158****1562
-    string alipay_buyer_user_id = 14;   // 支付宝用户id      必选接口[]                                     2088101117955611
-    repeated Refund refund_list = 15;   // 退款订单明细       必选接口[Refund、RefundQuery]  
+    string out_refund_no = 5;           // 退款订单编号      必选接口[Refund、RefundQuery]     GZ2020010117534314525
+    string trade_no = 6;                // 渠道交易编号      必选接口[AopF2F、Query、Refund、RefundQuery]     2013112011001004330000121536
+    int64 total_fee = 7;                // 订单金额 [单位分] 必选接口[AopF2F、Query、Refund、RefundQuery]     180=1.8元
+    int64 refund_fee = 8;               // 退款金额 [单位分] 必选接口[Refund、RefundQuery]                   180=1.8元
+    string status = 9;                  // 订单状态         必选接口[AopF2F、Query、Refund、RefundQuery]     SUCCESS成功、CLOSED关闭、USERPAYING等待用户付款、WAITING系统繁忙稍后查询
+    string time_end = 10;                // 订单完成时间      必选接口[AopF2F、Query、Refund、RefundQuery]     SUCCESS成功、CLOSED关闭、USERPAYING等待用户付款、WAITING系统繁忙稍后查询
+    string content = 11;                // 通道返回原始内容   必选接口[AopF2F、Query、Refund、RefundQuery] 
+    string wechat_open_id = 12;         // 微信openid       必选接口[]                                      oUpF8uN95-Pteags6E_roPHg7AG
+    string wechat_is_subscribe = 13;    // 是否微信关注公众号 必选接口[]                                      Y/N
+    string alipay_buyer_logon_id = 14;  // 支付宝账号        必选接口[]                                     158****1562
+    string alipay_buyer_user_id = 15;   // 支付宝用户id      必选接口[]                                     2088101117955611
+    repeated Refund refund_list = 16;   // 退款订单明细       必选接口[Refund、RefundQuery]  
 }
 // 公共响应参数
 message Response {

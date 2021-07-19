@@ -18,6 +18,7 @@ type Order interface {
 	Total(req *pb.ListQuery) (int64, error)
 	Create(order *pb.Order) error
 	Delete(order *pb.Order) (bool, error)
+	UpdateRefundFee(order *pb.Order) error
 	Update(order *pb.Order) error
 	Get(order *pb.Order) error
 	StoreIdAndOutTradeNoGet(order *pb.Order) error
@@ -122,6 +123,12 @@ func (repo *OrderRepository) Update(order *pb.Order) error {
 	}
 	order.CreatedAt = ""
 	return repo.DB.Save(order).Error
+}
+
+// UpdateRefundFee 更新原始订单退款金额
+func (repo *OrderRepository) UpdateRefundFee(order *pb.Order) error {
+
+	return nil
 }
 
 // Delete 删除订单

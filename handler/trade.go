@@ -3,9 +3,9 @@ package handler
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math"
 	"regexp"
+	"time"
 
 	"github.com/clbanning/mxj"
 	"github.com/jinzhu/gorm"
@@ -43,6 +43,8 @@ type Trade struct {
 // AopF2F 商家扫用户付款码
 // https://pay.weixin.qq.com/wiki/doc/api/micropay.php?chapter=9_10&index=1
 func (srv *Trade) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
+	// 初始化回参
+	res.Content = &pd.Content{}
 	if req.BizContent.AuthCode == "" {
 		res.Content.ReturnCode = "AopF2F.AuthCode.Not"
 		res.Content.ReturnMsg = "付款码不允许为空:BizContent.AuthCode"
@@ -99,8 +101,6 @@ func (srv *Trade) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response)
 		log.Fatal(req, res)
 		return nil
 	}
-	// 初始化回参
-	res.Content = &pd.Content{}
 	content := mxj.New()
 	switch req.BizContent.Channel {
 	case "alipay":
@@ -126,6 +126,8 @@ func (srv *Trade) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response)
 // // Query 支付查询
 // // https://pay.weixin.qq.com/wiki/doc/api/micropay.php?chapter=9_2
 func (srv *Trade) Query(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
+	// 初始化回参
+	res.Content = &pd.Content{}
 	if req.BizContent.OutTradeNo == "" {
 		res.Content.ReturnCode = "AopF2F.OutTradeNo.Not"
 		res.Content.ReturnMsg = "订单编号不允许为空:BizContent.OutTradeNo"
@@ -138,8 +140,12 @@ func (srv *Trade) Query(ctx context.Context, req *pd.Request, res *pd.Response) 
 		log.Fatal(req, res, err)
 		return nil
 	}
-	// 初始化回参
-	res.Content = &pd.Content{}
+	if !srv.con.Status {
+		res.Content.ReturnCode = "AopF2F.Status"
+		res.Content.ReturnMsg = "支付功能被禁用！请联系管理员。"
+		log.Fatal(req, res, err)
+		return nil
+	}
 	repoOrder, err := srv.getOrder(req) //
 	if err != nil {
 		res.Content.Status = CLOSED
@@ -200,186 +206,167 @@ func (srv *Trade) RefundQuery(ctx context.Context, req *pd.Request, res *pd.Resp
 
 // Refund 交易退款
 func (srv *Trade) Refund(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
-	// 	res.Error = &pd.Error{}
-	// 	config, err := srv.userConfig(req.BizContent) // 获取配置同时根据商家名称赋值商家id
-	// 	req.BizContent.Method = ""                    // 退款取消默认通道以数据库订单为准
-	// 	if err != nil {
-	// 		res.Error.Code = "Refund.userConfig"
-	// 		res.Error.Detail = "退款是支付配置信息查询失败"
-	// 		log.Fatal(req, res, err)
-	// 		return nil
-	// 	}
-	// 	originalOrder := &orderPB.Order{
-	// 		StoreId: req.BizContent.StoreId,         // 商户门店编号 收款账号ID userID
-	// 		OrderNo: req.BizContent.OriginalOrderNo, // 订单编号
-	// 	}
-	// 	err = srv.Repo.StoreIdAndOutTradeNoGet(originalOrder) //创建订单返回订单ID
-	// 	if err != nil {
-	// 		res.Error.Code = "Refund.getOrder"
-	// 		res.Error.Detail = "退款获取订单失败"
-	// 		log.Fatal(req, res, err)
-	// 		return nil
-	// 	}
-	// 	if originalOrder.Status != 1 {
-	// 		res.Error.Code = "Refund.Status"
-	// 		res.Error.Detail = "订单未支付成功不允许退款"
-	// 		log.Fatal(req, originalOrder)
-	// 		return nil
-	// 	}
-	// 	if req.BizContent.RefundFee >= (originalOrder.TotalAmount - originalOrder.RefundFee) {
-	// 		res.Error.Code = "Refund.RefundFee"
-	// 		res.Error.Detail = "退款金额大于可退款金额"
-	// 		log.Fatal(req, originalOrder)
-	// 		return nil
-	// 	}
-	// 	// 构建新的退款订单
-	// 	if req.BizContent.RefundFee == 0 {
-	// 		req.BizContent.TotalAmount = -originalOrder.TotalAmount // 全额退款
-	// 	} else {
-	// 		req.BizContent.TotalAmount = -req.BizContent.RefundFee // 退款改为负数金额
-	// 	}
-	// 	if req.BizContent.OrderNo == "" {
-	// 		req.BizContent.OrderNo = originalOrder.OrderNo + "_" + time.Now().Format("0102150405") // 全额退款编号自动构建
-	// 	}
-	// 	refundOrder, err := srv.handerOrder(&orderPB.Order{
-	// 		StoreId:     originalOrder.StoreId,      // 商户门店编号 收款账号ID userID
-	// 		Method:      originalOrder.Method,       // 付款方式 [支付宝、微信、银联等]
-	// 		AuthCode:    originalOrder.AuthCode,     // 付款码
-	// 		Title:       originalOrder.Title,        // 订单标题
-	// 		TotalAmount: req.BizContent.TotalAmount, // 订单总金额
-	// 		OrderNo:     req.BizContent.OrderNo,     // 订单编号
-	// 		OperatorId:  originalOrder.OperatorId,   // 商户操作员编号
-	// 		TerminalId:  originalOrder.TerminalId,   // 商户机具终端编号
-	// 		LinkId:      originalOrder.Id,
-	// 		Status:      0, // 订单状态 默认状态未付款
-	// 	}) //创建退款订单返回订单ID
-	// 	if req.BizContent.Verify { // 需要验证授权
-	// 		res.Order = req.BizContent
-	// 		res.Order.Method = originalOrder.Method
-	// 		res.Valid = true
-	// 	} else {
-	// 		res.Valid, res.Content, err = srv.handerRefund(config, refundOrder, originalOrder)
-	// 	}
-	// 	return nil
-	// }
+	// 初始化回参
+	res.Content = &pd.Content{}
+	if req.BizContent.OutRefundNo == "" {
+		res.Content.ReturnCode = "AopF2F.OutRefundNo.Not"
+		res.Content.ReturnMsg = "订单金额不允许小于1:BizContent.OutRefundNo"
+		return
+	}
+	if req.BizContent.OutTradeNo == "" {
+		res.Content.ReturnCode = "AopF2F.OutTradeNo.Not"
+		res.Content.ReturnMsg = "订单编号不允许为空:BizContent.OutTradeNo"
+		return
+	}
+	err = srv.userConfig(req)
+	if err != nil {
+		res.Content.ReturnCode = "AopF2F.userConfig"
+		res.Content.ReturnMsg = "查询商户支付配置信息失败"
+		log.Fatal(req, res, err)
+		return nil
+	}
+	if !srv.con.Status {
+		res.Content.ReturnCode = "AopF2F.Status"
+		res.Content.ReturnMsg = "支付功能被禁用！请联系管理员。"
+		log.Fatal(req, res, err)
+		return nil
+	}
+	originalOrder := &orderPB.Order{
+		StoreId:    req.StoreId,               // 商户门店编号 收款账号ID userID
+		OutTradeNo: req.BizContent.OutTradeNo, // 订单编号
+	}
+	err = srv.Repo.StoreIdAndOutTradeNoGet(originalOrder) //获取订单返回订单ID
+	if err != nil {
+		res.Content.ReturnCode = "Refund.OriginalOrder.GetOrder"
+		res.Content.ReturnMsg = "获取订单失败,请先查询订单确认订单存在"
+		log.Fatal(req, res, err)
+		return nil
+	}
+	if originalOrder.Status != 1 {
+		res.Content.ReturnCode = "Refund.OriginalOrder.Status"
+		res.Content.ReturnMsg = "订单未支付成功不允许退款,请先查询订单确认订单支付成功"
+		log.Fatal(req, originalOrder)
+		return nil
+	}
+	if req.BizContent.RefundFee >= (originalOrder.TotalFee - originalOrder.RefundFee) {
+		res.Content.ReturnCode = "Refund.OriginalOrder.RefundFee"
+		res.Content.ReturnMsg = "退款金额大于可退款金额"
+		log.Fatal(req, originalOrder)
+		return nil
+	}
+	// 构建新的退款订单
+	if req.BizContent.RefundFee == 0 {
+		req.BizContent.TotalFee = -originalOrder.TotalFee // 全额退款
+	} else {
+		req.BizContent.TotalFee = -req.BizContent.RefundFee // 退款改为负数金额
+	}
+	if req.BizContent.OutTradeNo == "" {
+		req.BizContent.OutTradeNo = originalOrder.OutTradeNo + "_" + time.Now().Format("0102150405") // 全额退款编号自动构建
+	}
+	refundOrder, err := srv.handerOrder(&orderPB.Order{
+		StoreId:    req.StoreId,               // 商户门店编号 收款账号ID userID
+		Channel:    originalOrder.Channel,     // 付款方式 [支付宝、微信、银联等]
+		AuthCode:   originalOrder.AuthCode,    // 付款码
+		Title:      originalOrder.Title,       // 订单标题
+		TotalFee:   req.BizContent.TotalFee,   // 订单总金额
+		OutTradeNo: req.BizContent.OutTradeNo, // 订单编号
+		OperatorId: originalOrder.OperatorId,  // 商户操作员编号
+		TerminalId: originalOrder.TerminalId,  // 商户机具终端编号
+		LinkId:     originalOrder.Id,
+		Status:     0, // 订单状态 默认状态未付款
+	}) //创建退款订单返回订单ID
+	srv.handerRefund(refundOrder, originalOrder)
 
-	// // AffirmRefund 确认退款
-	// func (srv *Trade) AffirmRefund(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
-	// 	res.Error = &pd.Error{}
-	// 	config, err := srv.userConfig(req.BizContent) // 获取配置同时根据商家名称赋值商家id
-	// 	if err != nil {
-	// 		res.Error.Code = "AffirmRefund.userConfig"
-	// 		res.Error.Detail = "退款是支付配置信息查询失败"
-	// 		log.Fatal(req, res, err)
-	// 		return nil
-	// 	}
-	// 	refundOrder, err := srv.getOrder(req.BizContent) //创建订单返回订单ID
-	// 	if err != nil {
-	// 		res.Error.Code = "AffirmRefund.getOrder"
-	// 		res.Error.Detail = "确认退款获取订单失败"
-	// 		log.Fatal(req, res, err)
-	// 		return nil
-	// 	}
-	// 	originalOrder := &orderPB.Order{
-	// 		Id: refundOrder.LinkId,
-	// 	}
-	// 	err = srv.Repo.Get(originalOrder)
-	// 	if err != nil {
-	// 		res.Error.Code = "AffirmRefund.Repo.Get"
-	// 		res.Error.Detail = "确认退款获取原始订单失败"
-	// 		log.Fatal(req, res, err)
-	// 		return nil
-	// 	}
-	// 	res.Valid, res.Content, err = srv.handerRefund(config, refundOrder, originalOrder)
-	return
+	return nil
 }
 
-// // handerRefund 处理退款
-// func (srv *Trade) handerRefund(config *configPB.Config, refundOrder *orderPB.Order, originalOrder *orderPB.Order) (valid bool, res string, err error) {
-// 	switch refundOrder.Method {
-// 	case "alipay":
-// 		srv.newAlipayClient(config) //实例化连支付宝接
-// 		content, err := srv.Alipay.Refund(refundOrder, originalOrder)
-// 		if err != nil {
-// 			return valid, res, err
-// 		}
-// 		if content["code"] == "10000" && content["msg"] == "Success" { // 订单关闭状态
-// 			err = srv.successOrder(refundOrder, config.Alipay.Fee)
-// 			if err != nil {
-// 				return valid, res, err
-// 			}
-// 			originalOrder.RefundFee = originalOrder.RefundFee + (-refundOrder.TotalAmount) // 已有退款加正数退款
-// 			err = srv.Repo.Update(originalOrder)
-// 			if err != nil {
-// 				return valid, res, err
-// 			}
-// 			valid = true
-// 		}
-// 		if content["sub_code"] == "ACQ.TRADE_HAS_CLOSE" || content["sub_code"] == "ACQ.TRADE_NOT_EXIST" { // 订单关闭状态
-// 			refundOrder.Fee = 0
-// 			refundOrder.Status = -1
-// 			err = srv.Repo.Update(refundOrder)
-// 			if err != nil {
-// 				return valid, res, err
-// 			}
-// 		}
-// 		c, err := content.Json()
-// 		if err != nil {
-// 			return valid, res, err
-// 		}
-// 		res = string(c) //数据正常返回
-// 		return valid, res, err
-// 	case "wechat":
-// 		srv.newWechatClient(config) //实例化连微信接
-// 		content, err := srv.Wechat.Refund(refundOrder, originalOrder)
-// 		if err != nil {
-// 			return valid, res, err
-// 		}
-// 		if content["return_code"] == "SUCCESS" && content["result_code"] == "SUCCESS" { // 订单关闭状态
-// 			err = srv.successOrder(refundOrder, config.Wechat.Fee)
-// 			if err != nil {
-// 				return valid, res, err
-// 			}
-// 			originalOrder.RefundFee = originalOrder.RefundFee + (-refundOrder.TotalAmount) // 已有退款加正数退款
-// 			err = srv.Repo.Update(originalOrder)
-// 			if err != nil {
-// 				return valid, res, err
-// 			}
-// 			valid = true
-// 		}
-// 		c, err := content.Json()
-// 		if err != nil {
-// 			return valid, res, err
-// 		}
-// 		res = string(c) //数据正常返回
-// 		return valid, res, err
-// 	case "icbc":
-// 		srv.newIcbcClient(config) //实例化连工行接
-// 		content, err := srv.Icbc.Refund(refundOrder, originalOrder)
-// 		if err != nil {
-// 			return valid, res, err
-// 		}
-// 		if content["return_code"] == "0" { // 订单关闭状态
-// 			err = srv.successOrder(refundOrder, config.Icbc.Fee)
-// 			if err != nil {
-// 				return valid, res, err
-// 			}
-// 			originalOrder.RefundFee = originalOrder.RefundFee + (-refundOrder.TotalAmount) // 已有退款加正数退款
-// 			err = srv.Repo.Update(originalOrder)
-// 			if err != nil {
-// 				return valid, res, err
-// 			}
-// 			valid = true
-// 		}
-// 		c, err := content.Json()
-// 		if err != nil {
-// 			return valid, res, err
-// 		}
-// 		res = string(c) //数据正常返回
-// 		return valid, res, err
+// // AffirmRefund 确认退款
+// func (srv *Trade) AffirmRefund(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
+// 	res.Error = &pd.Error{}
+// 	config, err := srv.userConfig(req.BizContent) // 获取配置同时根据商家名称赋值商家id
+// 	if err != nil {
+// 		res.Error.Code = "AffirmRefund.userConfig"
+// 		res.Error.Detail = "退款是支付配置信息查询失败"
+// 		log.Fatal(req, res, err)
+// 		return nil
 // 	}
-// 	return valid, res, err
+// 	refundOrder, err := srv.getOrder(req.BizContent) //创建订单返回订单ID
+// 	if err != nil {
+// 		res.Error.Code = "AffirmRefund.getOrder"
+// 		res.Error.Detail = "确认退款获取订单失败"
+// 		log.Fatal(req, res, err)
+// 		return nil
+// 	}
+// 	originalOrder := &orderPB.Order{
+// 		Id: refundOrder.LinkId,
+// 	}
+// 	err = srv.Repo.Get(originalOrder)
+// 	if err != nil {
+// 		res.Error.Code = "AffirmRefund.Repo.Get"
+// 		res.Error.Detail = "确认退款获取原始订单失败"
+// 		log.Fatal(req, res, err)
+// 		return nil
+// 	}
+// 	res.Valid, res.Content, err = srv.handerRefund(config, refundOrder, originalOrder)
+// 	return
 // }
+
+// handerRefund 处理退款
+func (srv *Trade) handerRefund(refundOrder *orderPB.Order, originalOrder *orderPB.Order) (err error) {
+	content := mxj.New()
+	resContent := &pd.Content{}
+	switch refundOrder.Channel {
+	case "alipay":
+		srv.newAlipayClient() //实例化支付宝连接
+		content, err = srv.Alipay.Refund(refundOrder, originalOrder)
+	case "wechat":
+		srv.newWechatClient() //实例化微信连接
+		content, err = srv.Wechat.Refund(refundOrder, originalOrder)
+	case "icbc":
+		srv.newIcbcClient() //实例化微信连接
+		content, err = srv.Icbc.Refund(refundOrder, originalOrder)
+	}
+	resContent.ReturnCode = content["return_code"].(string)
+	resContent.ReturnMsg = content["return_msg"].(string)
+	if content["return_code"] == "SUCCESS" {
+		refundOrder.TradeNo = content["trade_no"].(string)
+		err = srv.successOrder(refundOrder)
+		if err != nil {
+			resContent.Status = WAITING
+			resContent.ReturnCode = "Refund.Success.Update"
+			resContent.ReturnMsg = "退款成功,更新订单状态失败!"
+		}
+		err = srv.Repo.UpdateRefundFee(originalOrder)
+		if err != nil {
+			resContent.Status = WAITING
+			resContent.ReturnCode = "Refund.Success.UpdateRefundFee"
+			resContent.ReturnMsg = "退款成功,更新原始订单退款金额失败!"
+		}
+		resContent.Status = SUCCESS
+		resContent.Channel = content["channel"].(string)
+		resContent.OutTradeNo = originalOrder.OutTradeNo
+		resContent.OutRefundNo = content["out_trade_no"].(string)
+		resContent.TradeNo = content["trade_no"].(string)
+		resContent.TotalFee = refundOrder.TotalFee
+		resContent.RefundFee = refundOrder.RefundFee
+
+	}
+	resContent.ReturnMsg = content["return_msg"].(string)
+	c, _ := content["content"].(mxj.Map).Json()
+	resContent.Content = string(c)
+
+	// err = srv.successOrder(refundOrder, config.Alipay.Fee)
+	// 		if err != nil {
+	// 			return valid, res, err
+	// 		}
+	// 		originalOrder.RefundFee = originalOrder.RefundFee + (-refundOrder.TotalAmount) // 已有退款加正数退款
+	// 		err = srv.Repo.Update(originalOrder)
+	// 		if err != nil {
+	// 			return valid, res, err
+	// 		}
+	// 		valid = true
+	return
+}
 
 // userConfig 用户配置
 func (srv *Trade) userConfig(req *pd.Request) error {
@@ -495,14 +482,15 @@ func (srv *Trade) newIcbcClient() {
 
 // handerAopF2F 处理扫码支付回调信息
 func (srv *Trade) handerAopF2F(content mxj.Map, res *pd.Response, repoOrder *orderPB.Order) (err error) {
+	res.Content.ReturnCode = content["return_code"].(string)
+	res.Content.ReturnMsg = content["return_msg"].(string)
 	if content["return_code"] == "SUCCESS" {
 		repoOrder.TradeNo = content["trade_no"].(string)
 		err = srv.successOrder(repoOrder)
 		if err != nil {
 			res.Content.Status = WAITING
-			res.Content.ReturnCode = "Query.Update.Success"
+			res.Content.ReturnCode = "AopF2.Update.Success"
 			res.Content.ReturnMsg = "支付成功,更新订单状态失败!"
-			log.Fatal(res, err)
 		}
 		res.Content.Status = SUCCESS
 		res.Content.Channel = content["channel"].(string)
@@ -522,11 +510,7 @@ func (srv *Trade) handerAopF2F(content mxj.Map, res *pd.Response, repoOrder *ord
 		if v, ok := content["alipay_buyer_user_id"]; ok {
 			res.Content.AlipayBuyerUserId = v.(string)
 		}
-	} else {
-		res.Content.ReturnCode = content["return_code"].(string)
-		log.Fatal(res, err)
 	}
-	res.Content.ReturnMsg = content["return_msg"].(string)
 	c, _ := content["content"].(mxj.Map).Json()
 	res.Content.Content = string(c)
 	return nil
@@ -534,6 +518,8 @@ func (srv *Trade) handerAopF2F(content mxj.Map, res *pd.Response, repoOrder *ord
 
 // handerQuery 处理订单查询支付回调信息
 func (srv *Trade) handerQuery(content mxj.Map, res *pd.Response, repoOrder *orderPB.Order) (err error) {
+	res.Content.ReturnCode = content["return_code"].(string)
+	res.Content.ReturnMsg = content["return_msg"].(string)
 	if content["return_code"] == "SUCCESS" {
 		switch content["return_code"].(string) {
 		case SUCCESS:
@@ -542,7 +528,6 @@ func (srv *Trade) handerQuery(content mxj.Map, res *pd.Response, repoOrder *orde
 				res.Content.Status = WAITING
 				res.Content.ReturnCode = "Query.Update.Success"
 				res.Content.ReturnMsg = "支付成功,更新订单状态失败!"
-				log.Fatal(res, err)
 			}
 			res.Content.Status = SUCCESS
 		case CLOSED:
@@ -553,7 +538,6 @@ func (srv *Trade) handerQuery(content mxj.Map, res *pd.Response, repoOrder *orde
 				res.Content.Status = WAITING
 				res.Content.ReturnCode = "Query.Update.Close"
 				res.Content.ReturnMsg = "支付失败,更新订单状态失败!"
-				log.Fatal(res, err)
 			}
 			res.Content.Status = CLOSED
 		case USERPAYING:
@@ -577,14 +561,9 @@ func (srv *Trade) handerQuery(content mxj.Map, res *pd.Response, repoOrder *orde
 		if v, ok := content["alipay_buyer_user_id"]; ok {
 			res.Content.AlipayBuyerUserId = v.(string)
 		}
-	} else {
-		res.Content.ReturnCode = content["return_code"].(string)
-		log.Fatal(res, err)
 	}
-	res.Content.ReturnMsg = content["return_msg"].(string)
 	c, _ := content["content"].(mxj.Map).Json()
 	res.Content.Content = string(c)
-	fmt.Println("454545", content)
 	return nil
 }
 

@@ -119,8 +119,9 @@ func TestRefund(t *testing.T) {
 	req := &tradePB.Request{
 		StoreId: "7b490bb0-c04d-4fd8-9bf9-ef4f2239d3a0",
 		BizContent: &tradePB.BizContent{
-			Channel:    "alipay",
-			OutTradeNo: `GTB202001011753431459029`,
+			Channel:     "alipay",
+			OutTradeNo:  `GTB202001011753431459029`,
+			OutRefundNo: `GTB202001011753431459029_101010`,
 		},
 	}
 	res := &tradePB.Response{}
