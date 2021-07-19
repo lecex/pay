@@ -169,7 +169,7 @@ func (srv *Trade) Query(ctx context.Context, req *pd.Request, res *pd.Response) 
 		res.Content.Status = SUCCESS // 订单状态默认待付款
 	}
 
-	// debug 查询
+	// debug 退款订单是否允许再次查询
 	// if repoOrder.RefundFee == repoOrder.TotalFee {
 	// 	res.Content.ReturnCode = "Query.RefundFee.Not.TotalFee"
 	// 	res.Content.ReturnMsg = "订单已退款不支持再次查询"
@@ -190,107 +190,6 @@ func (srv *Trade) Query(ctx context.Context, req *pd.Request, res *pd.Response) 
 		content, err = srv.Icbc.Query(req.BizContent)
 	}
 	srv.handerQuery(content, res, repoOrder)
-	// 	case "wechat":
-	// 		srv.newWechatClient(config) //实例化连微信接
-	// 		content, err := srv.Wechat.Query(req.BizContent)
-	// 		if err != nil {
-	// 			res.Error.Code = "Query.Wechat.Error"
-	// 			res.Error.Detail = err.Error()
-	// 			log.Fatal(req, res, err)
-	// 			return nil
-	// 		}
-	// 		c, err := content.Json()
-	// 		if err != nil {
-	// 			res.Error.Code = "Query.Wechat.Mxj"
-	// 			res.Error.Detail = "微信返回数据解析失败"
-	// 			log.Fatal(req, res, err)
-	// 			return nil
-	// 		}
-	// 		res.Content = string(c) //数据正常返回
-	// 		// 错误处理
-	// 		if content["return_code"] == "SUCCESS" { // 通信标识
-	// 			if content["trade_state"] == "SUCCESS" { // 交易状态标识
-	// 				res.Valid = true
-	// 				res.Order.Status = SUCCESS
-	// 				err = srv.successOrder(repoOrder, config.Wechat.Fee)
-	// 				if err != nil {
-	// 					res.Order.Status = USERPAYING
-	// 					res.Error.Code = "Query.Wechat.Update.Success"
-	// 					res.Error.Detail = "支付成功,更新订单状态失败!"
-	// 					log.Fatal(req, res, err)
-	// 				}
-	// 			}
-	// 			// SUCCESS—支付成功、REFUND—转入退款、NOTPAY—未支付、CLOSED—已关闭、REVOKED—已撤销（付款码支付）、USERPAYING--用户支付中（付款码支付）、PAYERROR--支付失败(其他原因，如银行返回失败)
-	// 			if content["trade_state"] == "REFUND" || content["trade_state"] == "CLOSED" || content["trade_state"] == "REVOKED" || content["trade_state"] == "PAYERROR" || content["err_code"] == "ORDERNOTEXIST" {
-	// 				repoOrder.Fee = 0
-	// 				repoOrder.Status = -1
-	// 				res.Order.Status = CLOSED
-	// 				err = srv.Repo.Update(repoOrder)
-	// 				if err != nil {
-	// 					res.Order.Status = USERPAYING
-	// 					res.Error.Code = "Query.Wechat.Update.Close"
-	// 					res.Error.Detail = "支付失败,更新订单状态失败!"
-	// 					log.Fatal(req, res, err)
-	// 				}
-	// 			}
-	// 			if content["result_code"] != "SUCCESS" { // 返回错误代码
-	// 				res.Error.Code = content["err_code"].(string)
-	// 				res.Error.Detail = content["err_code_des"].(string)
-	// 			}
-	// 		} else {
-	// 			res.Error.Code = "Query.Wechat.ReturnCode"
-	// 			res.Error.Detail = content["return_msg"].(string)
-	// 		}
-	// 		return nil
-	// 	case "icbc":
-	// 		srv.newIcbcClient(config) //实例化连工行接
-	// 		content, err := srv.Icbc.Query(req.BizContent)
-	// 		if err != nil {
-	// 			res.Error.Code = "Query.Icbc.Error"
-	// 			res.Error.Detail = err.Error()
-	// 			log.Fatal(req, res, err)
-	// 			return nil
-	// 		}
-	// 		c, err := content.Json()
-	// 		if err != nil {
-	// 			res.Error.Code = "Query.Icbc.Mxj"
-	// 			res.Error.Detail = "工行返回数据解析失败"
-	// 			log.Fatal(req, res, err)
-	// 			return nil
-	// 		}
-	// 		res.Content = string(c) //数据正常返回
-	// 		// 错误处理
-	// 		if content["return_code"] == "0" { // 通信标识
-	// 			if content["pay_status"] == "1" { // 交易状态标识
-	// 				res.Valid = true
-	// 				res.Order.Status = SUCCESS
-	// 				err = srv.successOrder(repoOrder, config.Icbc.Fee)
-	// 				if err != nil {
-	// 					res.Order.Status = USERPAYING
-	// 					res.Error.Code = "Query.Icbc.Update.Success"
-	// 					res.Error.Detail = "支付成功,更新订单状态失败!"
-	// 					log.Fatal(req, res, err)
-	// 				}
-	// 			}
-	// 			// 交易结果标志：0：支付中请稍后查询，1：支付成功，2：支付失败，3：已撤销，4：撤销中请稍后查询，5：已全额退款，6：已部分退款，7：退款中请稍后查询
-	// 			if content["pay_status"] == "-1" || content["pay_status"] == "2" || content["pay_status"] == "3" || content["pay_status"] == "5" {
-	// 				repoOrder.Fee = 0
-	// 				repoOrder.Status = -1
-	// 				res.Order.Status = CLOSED
-	// 				err = srv.Repo.Update(repoOrder)
-	// 				if err != nil {
-	// 					res.Order.Status = USERPAYING
-	// 					res.Error.Code = "Query.Icbc.Update.Close"
-	// 					res.Error.Detail = "支付失败,更新订单状态失败!"
-	// 					log.Fatal(req, res, err)
-	// 				}
-	// 			}
-	// 		} else {
-	// 			res.Error.Code = content["return_code"].(string)
-	// 			res.Error.Detail = content["return_msg"].(string)
-	// 		}
-	// 		return nil
-	// 	}
 	return nil
 }
 

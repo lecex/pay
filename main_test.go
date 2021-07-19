@@ -109,21 +109,23 @@ func TestQuery(t *testing.T) {
 }
 
 func TestRefund(t *testing.T) {
-	// h := handler.Pay{
-	// 	Config: &repository.ConfigRepository{db.DB},
-	// 	Repo:   &repository.OrderRepository{db.DB},
-	// 	Alipay: &service.Alipay{},
-	// 	Wechat: &service.Wechat{},
-	// }
-	// req := &payPB.Request{
-	// 	Order: &payPB.Order{
-	// 		StoreName:       `ceshi`,
-	// 		OriginalOrderNo: `GTZ202001011753431459023`,
-	// 	},
-	// }
-	// res := &payPB.Response{}
-	// err := h.Refund(context.TODO(), req, res)
-	// fmt.Println("TestRefund_____", res, err)
-	// t.Log("TestAffirmRefund", req, res, err)
+	h := handler.Trade{
+		Config: &repository.ConfigRepository{db.DB},
+		Repo:   &repository.OrderRepository{db.DB},
+		Alipay: &trade.Alipay{},
+		Wechat: &trade.Wechat{},
+		Icbc:   &trade.Icbc{},
+	}
+	req := &tradePB.Request{
+		StoreId: "7b490bb0-c04d-4fd8-9bf9-ef4f2239d3a0",
+		BizContent: &tradePB.BizContent{
+			Channel:    "alipay",
+			OutTradeNo: `GTB202001011753431459029`,
+		},
+	}
+	res := &tradePB.Response{}
+	err := h.Refund(context.TODO(), req, res)
+	fmt.Println("TestRefund_____", res, err)
+	t.Log("TestAffirmRefund", req, res, err)
 
 }
