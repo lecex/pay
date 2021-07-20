@@ -26,7 +26,9 @@ func (srv *Icbc) NewClient(config map[string]string) {
 	c := srv.Client.Config
 	c.AppId = config["AppId"]
 	c.PrivateKey = config["PrivateKey"]
+	c.IcbcPublicKey = config["IcbcPublicKey"]
 	c.SignType = config["SignType"]
+	c.ReturnSignType = config["ReturnSignType"]
 }
 
 // Query 支付查询
@@ -73,7 +75,7 @@ func (srv *Icbc) Refund(refundOrder *orderPB.Order, originalOrder *orderPB.Order
 	return srv.request(request)
 }
 
-// Query 支付查询
+// RefundQuery 退款查询
 func (srv *Icbc) RefundQuery(b *proto.BizContent) (req mxj.Map, err error) {
 	// 配置参数
 	request := requests.NewCommonRequest()
@@ -81,7 +83,7 @@ func (srv *Icbc) RefundQuery(b *proto.BizContent) (req mxj.Map, err error) {
 	request.BizContent = map[string]interface{}{
 		"mer_id":       srv.config["MerId"],
 		"out_trade_no": b.OutTradeNo,
-		"reject_no":    "", //debug
+		"reject_no":    b.OutRefundNo, //debug
 	}
 	return srv.request(request)
 }

@@ -93,6 +93,20 @@ func (srv *Wechat) Refund(refundOrder *orderPB.Order, originalOrder *orderPB.Ord
 	return srv.request(request)
 }
 
+// RefundQuery 退款查询
+func (srv *Wechat) RefundQuery(b *proto.BizContent) (req mxj.Map, err error) {
+	// 配置参数
+	request := requests.NewCommonRequest()
+	request.Domain = "mch"
+	request.ApiName = "pay.refundquery"
+	request.QueryParams = map[string]interface{}{
+		"out_trade_no":  b.OutTradeNo,
+		"out_refund_no": b.OutRefundNo, //debug
+	}
+	return srv.request(request)
+}
+
+// request 请求处理
 func (srv *Wechat) request(request *requests.CommonRequest) (req mxj.Map, err error) {
 	// 请求
 	response, err := srv.Client.ProcessCommonRequest(request)

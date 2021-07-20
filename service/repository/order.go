@@ -125,10 +125,10 @@ func (repo *OrderRepository) Update(order *pb.Order) error {
 	return repo.DB.Save(order).Error
 }
 
-// RefundFee 获取退款总金额
+// RefundFee 获取退款总金额 只有退款成功的订单才会计算
 func (repo *OrderRepository) RefundFee(o *pb.Order) (count int64, err error) {
 	order := &pb.Order{}
-	if err = repo.DB.Model(order).Select("SUM(total_fee) as refund_fee").Where("link_id = ?", o.Id).Find(order).Error; err != nil {
+	if err = repo.DB.Model(order).Select("SUM(total_fee) as refund_fee").Where("link_id = ?", o.Id).Where("status = 1").Find(order).Error; err != nil {
 		return 0, err
 	}
 	return -order.RefundFee, err

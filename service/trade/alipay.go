@@ -85,6 +85,18 @@ func (srv *Alipay) Refund(refundOrder *orderPB.Order, originalOrder *orderPB.Ord
 	return srv.request(request)
 }
 
+// RefundQuery 退款查询
+func (srv *Alipay) RefundQuery(b *proto.BizContent) (req mxj.Map, err error) {
+	// 配置参数
+	request := requests.NewCommonRequest()
+	request.ApiName = "alipay.trade.fastpay.refund.query"
+	request.BizContent = map[string]interface{}{
+		"out_trade_no":   b.OutTradeNo,
+		"out_request_no": b.OutRefundNo, //debug
+	}
+	return srv.request(request)
+}
+
 // request 请求处理
 func (srv *Alipay) request(request *requests.CommonRequest) (req mxj.Map, err error) {
 	response, err := srv.Client.ProcessCommonRequest(request)
