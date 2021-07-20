@@ -223,7 +223,14 @@ func (srv *Trade) Refund(ctx context.Context, req *pd.Request, res *pd.Response)
 		StoreId:    req.StoreId,               // 商户门店编号 收款账号ID userID
 		OutTradeNo: req.BizContent.OutTradeNo, // 订单编号
 	}
-	err = srv.Repo.StoreIdAndOutTradeNoGet(originalOrder) //获取订单返回订单ID
+	// 工行银行扫码退款用工行的条码
+	if ok, _ := regexp.Match(srv.con.Icbc.MerId, []byte(req.BizContent.OutTradeNo)); ok && req.BizContent.Channel == "icbc" {
+		originalOrder.OutTradeNo = ""
+		originalOrder.TradeNo = req.BizContent.OutTradeNo
+		err = srv.Repo.StoreIdAndTradeNoGet(originalOrder) //获取订单返回订单ID
+	} else {
+		err = srv.Repo.StoreIdAndOutTradeNoGet(originalOrder) //获取订单返回订单ID
+	}
 	if err != nil {
 		res.Content.ReturnCode = "Refund.OriginalOrder.GetOrder"
 		res.Content.ReturnMsg = "获取订单失败,请先查询订单确认订单存在"
@@ -376,8 +383,14 @@ func (srv *Trade) RefundQuery(ctx context.Context, req *pd.Request, res *pd.Resp
 		StoreId:    req.StoreId,               // 商户门店编号 收款账号ID userID
 		OutTradeNo: req.BizContent.OutTradeNo, // 订单编号
 	}
-
-	err = srv.Repo.StoreIdAndOutTradeNoGet(originalOrder) //获取订单返回订单ID
+	// 工行银行扫码退款用工行的条码
+	if ok, _ := regexp.Match(srv.con.Icbc.MerId, []byte(req.BizContent.OutTradeNo)); ok && req.BizContent.Channel == "icbc" {
+		originalOrder.OutTradeNo = ""
+		originalOrder.TradeNo = req.BizContent.OutTradeNo
+		err = srv.Repo.StoreIdAndTradeNoGet(originalOrder) //获取订单返回订单ID
+	} else {
+		err = srv.Repo.StoreIdAndOutTradeNoGet(originalOrder) //获取订单返回订单ID
+	}
 	if err != nil {
 		res.Content.Status = CLOSED
 		res.Content.ReturnCode = "RefundQuery.OriginalOrder.StoreIdAndOutTradeNoGet"

@@ -22,6 +22,7 @@ type Order interface {
 	Update(order *pb.Order) error
 	Get(order *pb.Order) error
 	StoreIdAndOutTradeNoGet(order *pb.Order) error
+	StoreIdAndTradeNoGet(order *pb.Order) error
 	Exist(config *pb.Order) bool
 }
 
@@ -100,6 +101,14 @@ func (repo *OrderRepository) Get(order *pb.Order) error {
 // StoreIdAndOutTradeNoGet 根据 商家iD 订单ID获取
 func (repo *OrderRepository) StoreIdAndOutTradeNoGet(order *pb.Order) error {
 	if err := repo.DB.Where("store_id = ?", order.StoreId).Where("out_trade_no = ?", order.OutTradeNo).Find(&order).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+// StoreIdAndTradeNoGet 根据 平台 订单ID获取
+func (repo *OrderRepository) StoreIdAndTradeNoGet(order *pb.Order) error {
+	if err := repo.DB.Where("store_id = ?", order.StoreId).Where("trade_no = ?", order.TradeNo).Find(&order).Error; err != nil {
 		return err
 	}
 	return nil
