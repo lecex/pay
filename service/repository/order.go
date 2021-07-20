@@ -125,10 +125,27 @@ func (repo *OrderRepository) Update(order *pb.Order) error {
 	return repo.DB.Save(order).Error
 }
 
+// RefundFee 获取退款总金额
+func (repo *OrderRepository) RefundFee(o *pb.Order) (count int64, err error) {
+	order := &pb.Order{}
+	if err = repo.DB.Model(order).Select("SUM(total_fee) as refund_fee").Where("link_id = ?", o.Id).Find(order).Error; err != nil {
+		return 0, err
+	}
+	return -order.RefundFee, err
+}
+
 // UpdateRefundFee 更新原始订单退款金额
 func (repo *OrderRepository) UpdateRefundFee(order *pb.Order) error {
-
-	return nil
+	if order.Id == "" {
+		return fmt.Errorf("请传入更新id")
+	}
+	refund_fee, err := repo.RefundFee(order)
+	if err != nil {
+		return err
+	}
+	order.RefundFee = refund_fee
+	order.CreatedAt = ""
+	return repo.DB.Save(order).Error
 }
 
 // Delete 删除订单
@@ -136,7 +153,7 @@ func (repo *OrderRepository) Delete(order *pb.Order) (bool, error) {
 	if order.Id == "" {
 		return false, fmt.Errorf("请传入更新id")
 	}
-	err := repo.DB.Where("id = ?", order.Id).Delete(order).Error
+	err := repo.DB.Model(&order).Where("id = ?", order.Id).Delete(order).Error
 	if err != nil {
 		log.Log(err)
 		return false, err

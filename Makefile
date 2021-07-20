@@ -8,6 +8,8 @@ tag:
 .PHONY: rpc
 rpc:
 	micro api  --handler=rpc  --namespace=go.micro.api --address=:8080
+srv:
+	micro api  --handler=rpc  --namespace=go.micro.srv --address=:8080
 .PHONY: api
 api:
 	micro api  --handler=api  --namespace=go.micro.api --address=:8081

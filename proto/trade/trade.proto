@@ -20,7 +20,7 @@ message BizContent {
     int64 refund_fee = 7;       // 退款金额 [单位分]       必选接口[Refund]                              180=1.8元
     string operator_id = 8;     // 商户操作员编号          必选接口[]                                    1004  
     string terminal_id = 9;     // 商户机具终端编号        必选接口[]                                    6008      
-    string attach = 10;          // 附加数据 [数据格式json] 必选接口[]                                    {data:data}              
+    string attach = 10;          // 附加数据 [数据格式json] 必选接口[]                                    {data:data}    
 }
 // 公共请求参数
 message Request { 
@@ -31,8 +31,7 @@ message Request {
 message Refund {
     string out_trade_no = 1;            // 订单编号         必选接口[Refund、RefundQuery]     GZ2020010117534314525
     string total_fee = 2;               // 订单金额 [单位分] 必选接口[Refund、RefundQuery]     180=1.8元
-    string refund_fee = 3;              // 退款金额 [单位分] 必选接口[Refund、RefundQuery]     180=1.8元
-    string status = 4;                  // 订单状态         必选接口[Refund、RefundQuery]     SUCCESS成功、CLOSED关闭、USERPAYING等待用户付款、WAITING系统繁忙稍后查询
+    string status = 3   ;                  // 订单状态         必选接口[Refund、RefundQuery]     SUCCESS成功、CLOSED关闭、USERPAYING等待用户付款、WAITING系统繁忙稍后查询
 }
 // 响应参数
 message Content {
@@ -40,7 +39,7 @@ message Content {
     string return_msg = 2;              // 返回消息         必选接口[AopF2F、Query、Refund、RefundQuery]     支付失败
     string channel = 3;                 // 通道内容         必选接口[AopF2F、Query、Refund、RefundQuery]     wechat
     string out_trade_no = 4;            // 订单编号         必选接口[AopF2F、Query、Refund、RefundQuery]     GZ2020010117534314525
-    string out_refund_no = 5;           // 退款订单编号      必选接口[Refund、RefundQuery]     GZ2020010117534314525
+    string out_refund_no = 5;           // 退款订单编号      必选接口[Refund、RefundQuery]                   GZ2020010117534314525
     string trade_no = 6;                // 渠道交易编号      必选接口[AopF2F、Query、Refund、RefundQuery]     2013112011001004330000121536
     int64 total_fee = 7;                // 订单金额 [单位分] 必选接口[AopF2F、Query、Refund、RefundQuery]     180=1.8元
     int64 refund_fee = 8;               // 退款金额 [单位分] 必选接口[Refund、RefundQuery]                   180=1.8元

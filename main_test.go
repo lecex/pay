@@ -81,7 +81,7 @@ func TestAopF2FWechat(t *testing.T) {
 	}
 	res := &tradePB.Response{}
 	err := h.AopF2F(context.TODO(), req, res)
-	fmt.Println("TestAopF2FWechat____________", res, err)
+	// fmt.Println("TestAopF2FWechat____________", res, err)
 	t.Log("TestAopF2FWechat", req, res, err)
 
 }
@@ -103,7 +103,7 @@ func TestQuery(t *testing.T) {
 	}
 	res := &tradePB.Response{}
 	err := h.Query(context.TODO(), req, res)
-	fmt.Println("TestQuery___", res, err)
+	// fmt.Println("TestQuery___", res, err)
 	t.Log("TestQuery", req, res, err)
 
 }
