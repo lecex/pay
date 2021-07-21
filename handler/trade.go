@@ -14,7 +14,7 @@ import (
 
 	configPB "github.com/lecex/pay/proto/config"
 	orderPB "github.com/lecex/pay/proto/order"
-	pd "github.com/lecex/pay/proto/trade"
+	pb "github.com/lecex/pay/proto/trade"
 	"github.com/lecex/pay/service/repository"
 	"github.com/lecex/pay/service/trade"
 )
@@ -41,9 +41,9 @@ type Trade struct {
 
 // AopF2F 商家扫用户付款码
 // https://pay.weixin.qq.com/wiki/doc/api/micropay.php?chapter=9_10&index=1
-func (srv *Trade) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
+func (srv *Trade) AopF2F(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
 	// 初始化回参
-	res.Content = &pd.Content{}
+	res.Content = &pb.Content{}
 	if req.BizContent.AuthCode == "" {
 		res.Content.ReturnCode = "AopF2F.AuthCode.Not"
 		res.Content.ReturnMsg = "付款码不允许为空:BizContent.AuthCode"
@@ -125,9 +125,9 @@ func (srv *Trade) AopF2F(ctx context.Context, req *pd.Request, res *pd.Response)
 
 // // Query 支付查询
 // // https://pay.weixin.qq.com/wiki/doc/api/micropay.php?chapter=9_2
-func (srv *Trade) Query(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
+func (srv *Trade) Query(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
 	// 初始化回参
-	res.Content = &pd.Content{}
+	res.Content = &pb.Content{}
 	if req.BizContent.OutTradeNo == "" {
 		res.Content.ReturnCode = "Query.OutTradeNo.Not"
 		res.Content.ReturnMsg = "订单编号不允许为空:BizContent.OutTradeNo"
@@ -192,9 +192,9 @@ func (srv *Trade) Query(ctx context.Context, req *pd.Request, res *pd.Response) 
 }
 
 // Refund 交易退款
-func (srv *Trade) Refund(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
+func (srv *Trade) Refund(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
 	// 初始化回参
-	res.Content = &pd.Content{}
+	res.Content = &pb.Content{}
 	if req.BizContent.OutRefundNo == "" {
 		res.Content.ReturnCode = "Refund.OutRefundNo.Not"
 		res.Content.ReturnMsg = "退款订单号不允许为空:BizContent.OutRefundNo"
@@ -267,8 +267,8 @@ func (srv *Trade) Refund(ctx context.Context, req *pd.Request, res *pd.Response)
 }
 
 // // AffirmRefund 确认退款
-// func (srv *Trade) AffirmRefund(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
-// 	res.Error = &pd.Error{}
+// func (srv *Trade) AffirmRefund(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
+// 	res.Error = &pb.Error{}
 // 	config, err := srv.userConfig(req.BizContent) // 获取配置同时根据商家名称赋值商家id
 // 	if err != nil {
 // 		res.Error.Code = "AffirmRefund.userConfig"
@@ -298,9 +298,9 @@ func (srv *Trade) Refund(ctx context.Context, req *pd.Request, res *pd.Response)
 // }
 
 // handerRefund 处理退款
-func (srv *Trade) handerRefund(refundOrder *orderPB.Order, originalOrder *orderPB.Order) (resContent *pd.Content) {
+func (srv *Trade) handerRefund(refundOrder *orderPB.Order, originalOrder *orderPB.Order) (resContent *pb.Content) {
 	content := mxj.New()
-	resContent = &pd.Content{}
+	resContent = &pb.Content{}
 	var err error
 	switch refundOrder.Channel {
 	case "alipay":
@@ -352,9 +352,9 @@ func (srv *Trade) handerRefund(refundOrder *orderPB.Order, originalOrder *orderP
 }
 
 // RefundQuery 退款查询
-func (srv *Trade) RefundQuery(ctx context.Context, req *pd.Request, res *pd.Response) (err error) {
+func (srv *Trade) RefundQuery(ctx context.Context, req *pb.Request, res *pb.Response) (err error) {
 	// 初始化回参
-	res.Content = &pd.Content{}
+	res.Content = &pb.Content{}
 	if req.BizContent.OutRefundNo == "" {
 		res.Content.ReturnCode = "RefundQuery.OutRefundNo.Not"
 		res.Content.ReturnMsg = "退款订单号不允许为空:BizContent.OutRefundNo"
@@ -440,7 +440,7 @@ func (srv *Trade) RefundQuery(ctx context.Context, req *pd.Request, res *pd.Resp
 }
 
 // userConfig 用户配置
-func (srv *Trade) userConfig(req *pd.Request) error {
+func (srv *Trade) userConfig(req *pb.Request) error {
 	if req.StoreId == "" {
 		return errors.New("商户ID不允许为空:StoreId")
 	}
@@ -493,7 +493,7 @@ func (srv *Trade) userConfig(req *pd.Request) error {
 }
 
 // getOrder 获取订单
-func (srv *Trade) getOrder(b *pd.Request) (repoOrder *orderPB.Order, err error) {
+func (srv *Trade) getOrder(b *pb.Request) (repoOrder *orderPB.Order, err error) {
 	repoOrder = &orderPB.Order{
 		StoreId:    b.StoreId,               // 商户门店编号 收款账号ID userID
 		OutTradeNo: b.BizContent.OutTradeNo, // 订单编号
@@ -552,7 +552,7 @@ func (srv *Trade) newIcbcClient() {
 }
 
 // handerAopF2F 处理扫码支付回调信息
-func (srv *Trade) handerAopF2F(content mxj.Map, res *pd.Response, repoOrder *orderPB.Order) (err error) {
+func (srv *Trade) handerAopF2F(content mxj.Map, res *pb.Response, repoOrder *orderPB.Order) (err error) {
 	res.Content.Channel = repoOrder.Channel
 	res.Content.ReturnCode = content["return_code"].(string)
 	res.Content.ReturnMsg = content["return_msg"].(string)
@@ -590,7 +590,7 @@ func (srv *Trade) handerAopF2F(content mxj.Map, res *pd.Response, repoOrder *ord
 }
 
 // handerQuery 处理订单查询支付回调信息
-func (srv *Trade) handerQuery(content mxj.Map, res *pd.Response, repoOrder *orderPB.Order) (err error) {
+func (srv *Trade) handerQuery(content mxj.Map, res *pb.Response, repoOrder *orderPB.Order) (err error) {
 	res.Content.ReturnCode = content["return_code"].(string)
 	res.Content.ReturnMsg = content["return_msg"].(string)
 	res.Content.Channel = repoOrder.Channel
@@ -644,7 +644,7 @@ func (srv *Trade) handerQuery(content mxj.Map, res *pd.Response, repoOrder *orde
 }
 
 // handerRefundQuery 处理订单退款查询支付回调信息
-func (srv *Trade) handerRefundQuery(content mxj.Map, res *pd.Response, refundOrder *orderPB.Order, originalOrder *orderPB.Order) (err error) {
+func (srv *Trade) handerRefundQuery(content mxj.Map, res *pb.Response, refundOrder *orderPB.Order, originalOrder *orderPB.Order) (err error) {
 	res.Content.Status = WAITING
 	res.Content.ReturnCode = content["return_code"].(string)
 	res.Content.ReturnMsg = content["return_msg"].(string)
