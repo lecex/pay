@@ -25,7 +25,7 @@ message BizContent {
 // 公共请求参数
 message Request { 
     string store_id = 1;        // 门店ID                 必选      0e896e91-1666-4fc4-8f30-e178f8a424e4 
-    BizContent biz_content = 3; // 请求内容                必选
+    BizContent biz_content = 2; // 请求内容                必选
 }
 // 退款订单
 message Refund {
@@ -54,6 +54,5 @@ message Content {
 }
 // 公共响应参数
 message Response {
-    string sign = 1;            // 签名 [计算content得到的秘钥签名]           必选
-    Content content = 2;        // 响应参数合计                             必选
+    Content content = 1;        // 响应参数合计                             必选
 }   
